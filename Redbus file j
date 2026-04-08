@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/Siva290395/redbus.git'
+            }
+        }
+        stage('Install') {
+            steps {
+                dir('front-end-redbus') {
+                    sh 'npm install --legacy-peer-deps'
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                dir('front-end-redbus') {
+                    sh '''
+                        export NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048"
+                        CI=false npm run build
+                    '''
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                dir('front-end-redbus') {
+                    sh '''
+                        pm2 delete redbus-frontend || true
+                        pm2 start "serve -s build -l 3000" --name "redbus-frontend"
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "âœ… Frontend deployed successfully!"
+            echo "ðŸŒ Website: http://<EC2-PUBLIC-IP>:3000"
+        }
+        failure {
+            echo "âŒ Frontend deployment failed. Check console logs above."
+        }
+    }
+}
