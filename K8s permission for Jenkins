@@ -7,3 +7,9 @@ sudo chown -R jenkins:jenkins /home/jenkins/.minikube
 sudo mkdir -p /home/jenkins/.kube
 sudo cp ~/.kube/config /home/jenkins/.kube/
 sudo chown -R jenkins:jenkins /home/jenkins/.kube
+sudo chmod 755 /home/kiaq-lap-73/.minikube
+sudo chmod 755 /home/kiaq-lap-73/.minikube/profiles
+sudo chmod 755 /home/kiaq-lap-73/.minikube/profiles/minikube
+sudo chmod 644 /home/kiaq-lap-73/.minikube/profiles/minikube/client.crt
+sudo chmod 644 /home/kiaq-lap-73/.minikube/profiles/minikube/client.key
+sudo chmod 644 /home/kiaq-lap-73/.minikube/ca.crt
