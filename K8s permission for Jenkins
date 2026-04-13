@@ -13,3 +13,6 @@ sudo chmod 755 /home/kiaq-lap-73/.minikube/profiles/minikube
 sudo chmod 644 /home/kiaq-lap-73/.minikube/profiles/minikube/client.crt
 sudo chmod 644 /home/kiaq-lap-73/.minikube/profiles/minikube/client.key
 sudo chmod 644 /home/kiaq-lap-73/.minikube/ca.crt
+sudo chmod 644 /home/kiaq-lap-73/.minikube/machines/minikube/id_rsa
+sudo chmod 755 /home/kiaq-lap-73/.minikube/machines
+sudo chmod 755 /home/kiaq-lap-73/.minikube/machines/minikube
