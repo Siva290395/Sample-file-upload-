@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        MINIKUBE_HOME = "/home/${env.USER}/.minikube"
+        KUBECONFIG = "/home/${env.USER}/.kube/config"
+    }
+
     stages {
 
         stage('Clone Code') {
@@ -20,7 +25,7 @@ pipeline {
         stage('Load Image to Minikube') {
             steps {
                 echo '📦 Minikube-ல Image Load பண்றோம்...'
-                sh 'minikube image load demo-app:latest'
+                sh 'minikube image load demo-app:latest --profile minikube'
             }
         }
 
