@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  APP_ENV: {{ .Values.configmap.APP_ENV }}
+  DB_HOST: {{ .Values.configmap.DB_HOST }}
