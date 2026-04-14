@@ -19,3 +19,9 @@ kubectl port-forward \
   -n monitoring \
   svc/prometheus-grafana \
   3000:80
+
+# New terminal திறு
+kubectl port-forward \
+  -n monitoring \
+  svc/prometheus-kube-prometheus-prometheus \
+  9090:9090
