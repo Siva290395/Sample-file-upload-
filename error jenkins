@@ -18,11 +18,11 @@ Fetching upstream changes from https://github.com/cloudhostingky-alt/E-flow-Back
 using GIT_ASKPASS to set credentials github-creds
  > git fetch --tags --force --progress -- https://github.com/cloudhostingky-alt/E-flow-Backend.git +refs/heads/*:refs/remotes/origin/* # timeout=10
  > git rev-parse refs/remotes/origin/Siva^{commit} # timeout=10
-Checking out Revision 0b02ba96c580f73474af47a294c8681b05f53d57 (refs/remotes/origin/Siva)
+Checking out Revision dfa19fce1a69a610ecb1cae4131ab018fb8cec8c (refs/remotes/origin/Siva)
  > git config core.sparsecheckout # timeout=10
- > git checkout -f 0b02ba96c580f73474af47a294c8681b05f53d57 # timeout=10
-Commit message: "modified dockerfile"
- > git rev-list --no-walk 55c31b509a6b4cba5da580c2e67c13e9923fe4d2 # timeout=10
+ > git checkout -f dfa19fce1a69a610ecb1cae4131ab018fb8cec8c # timeout=10
+Commit message: "Modified Dockerfile"
+ > git rev-list --no-walk 0b02ba96c580f73474af47a294c8681b05f53d57 # timeout=10
 [Pipeline] }
 [Pipeline] // stage
 [Pipeline] withEnv
@@ -41,13 +41,13 @@ Fetching upstream changes from https://github.com/cloudhostingky-alt/E-flow-Back
 using GIT_ASKPASS to set credentials github-creds
  > git fetch --tags --force --progress -- https://github.com/cloudhostingky-alt/E-flow-Backend.git +refs/heads/*:refs/remotes/origin/* # timeout=10
  > git rev-parse refs/remotes/origin/Siva^{commit} # timeout=10
-Checking out Revision 0b02ba96c580f73474af47a294c8681b05f53d57 (refs/remotes/origin/Siva)
+Checking out Revision dfa19fce1a69a610ecb1cae4131ab018fb8cec8c (refs/remotes/origin/Siva)
  > git config core.sparsecheckout # timeout=10
- > git checkout -f 0b02ba96c580f73474af47a294c8681b05f53d57 # timeout=10
+ > git checkout -f dfa19fce1a69a610ecb1cae4131ab018fb8cec8c # timeout=10
  > git branch -a -v --no-abbrev # timeout=10
  > git branch -D Siva # timeout=10
- > git checkout -b Siva 0b02ba96c580f73474af47a294c8681b05f53d57 # timeout=10
-Commit message: "modified dockerfile"
+ > git checkout -b Siva dfa19fce1a69a610ecb1cae4131ab018fb8cec8c # timeout=10
+Commit message: "Modified Dockerfile"
 [Pipeline] }
 [Pipeline] // stage
 [Pipeline] stage
@@ -55,15 +55,21 @@ Commit message: "modified dockerfile"
 [Pipeline] sh
 + docker system prune -f
 Deleted Containers:
-91cf0581ed29768d54098d4778619bb8b963cf2791bb2e08e9e159f943ae393a
+990fd9fc72ada36d59ac5f0e1d7043462c8af30db0adcdae8ef76581f1dde365
 
 Deleted Images:
-untagged: sha256:4aeb37d8633cd65077bb4badd3af0b0363d2d279a984861a231d962aba477869
-deleted: sha256:4aeb37d8633cd65077bb4badd3af0b0363d2d279a984861a231d962aba477869
-untagged: sha256:e0acec5f42d3fb907c20ada57794a93b186a3db4b30e4e96db7bd5502c1193bc
-deleted: sha256:e0acec5f42d3fb907c20ada57794a93b186a3db4b30e4e96db7bd5502c1193bc
+untagged: sha256:ba9129aa168871a04422829bde6180e49dc040906bd667705b46e33e0f19c198
+deleted: sha256:ba9129aa168871a04422829bde6180e49dc040906bd667705b46e33e0f19c198
+untagged: sha256:11995ab2c0bd75873c521257fdc649dd4ea925fd3cd97a89d5b9b045d8d22649
+deleted: sha256:11995ab2c0bd75873c521257fdc649dd4ea925fd3cd97a89d5b9b045d8d22649
+untagged: sha256:5c754e9933cadc502a3728e609c7b9414ec43291afc65a003f69550f7041e016
+deleted: sha256:5c754e9933cadc502a3728e609c7b9414ec43291afc65a003f69550f7041e016
+untagged: sha256:6022f80144aecd33fc37d996c557ed1956d9b84c31a4f6fcb2a82857871b3eb3
+deleted: sha256:6022f80144aecd33fc37d996c557ed1956d9b84c31a4f6fcb2a82857871b3eb3
+untagged: sha256:90059eecf764ea56317c1c569b9c986f82e0f7ef8b7e88233208032165a96ebf
+deleted: sha256:90059eecf764ea56317c1c569b9c986f82e0f7ef8b7e88233208032165a96ebf
 
-Total reclaimed space: 90.66MB
+Total reclaimed space: 604.7MB
 [Pipeline] }
 [Pipeline] // stage
 [Pipeline] stage
@@ -74,39 +80,43 @@ DEPRECATED: The legacy builder is deprecated and will be removed in a future rel
             Install the buildx component to build images with BuildKit:
             https://docs.docker.com/go/buildx/
 
-Sending build context to Docker daemon  63.38MB
+Sending build context to Docker daemon  63.03MB
 
-Step 1/10 : FROM node:20
+Step 1/11 : FROM node:20
  ---> 8789e1e0752d
-Step 2/10 : WORKDIR /app
- ---> Running in 20269f770f97
- ---> Removed intermediate container 20269f770f97
- ---> 3b852f61b845
-Step 3/10 : COPY package*.json ./
- ---> 67dc9fc03bb3
-Step 4/10 : RUN npm config set registry https://registry.npmjs.org/
- ---> Running in 42f82926034f
- ---> Removed intermediate container 42f82926034f
- ---> da7af26a49e5
-Step 5/10 : RUN npm cache clean --force
- ---> Running in d13f0bf11ec7
+Step 2/11 : WORKDIR /app
+ ---> Running in a2fe615b52c2
+ ---> Removed intermediate container a2fe615b52c2
+ ---> ba5544f5d887
+Step 3/11 : ENV PUPPETEER_SKIP_DOWNLOAD=true
+ ---> Running in b31771fd5356
+ ---> Removed intermediate container b31771fd5356
+ ---> 0e46be2c9167
+Step 4/11 : COPY package*.json ./
+ ---> 3278f80a1549
+Step 5/11 : RUN npm config set registry https://registry.npmjs.org/
+ ---> Running in b19f401c88e1
+ ---> Removed intermediate container b19f401c88e1
+ ---> 9a2555b0387f
+Step 6/11 : RUN npm cache clean --force
+ ---> Running in c1f7235d57cd
 [91mnpm warn using --force Recommended protections disabled.
-[0m ---> Removed intermediate container d13f0bf11ec7
- ---> 9b5f3f1c792e
-Step 6/10 : RUN rm -rf node_modules package-lock.json
- ---> Running in 1e64958924c9
- ---> Removed intermediate container 1e64958924c9
- ---> 10f524617be1
-Step 7/10 : RUN npm install --legacy-peer-deps --no-audit --no-fund
- ---> Running in 169f6d02959b
+[0m ---> Removed intermediate container c1f7235d57cd
+ ---> 790959314c52
+Step 7/11 : RUN rm -rf node_modules package-lock.json
+ ---> Running in d34911695552
+ ---> Removed intermediate container d34911695552
+ ---> fa92620bf7cf
+Step 8/11 : RUN npm install --legacy-peer-deps --no-audit --no-fund
+ ---> Running in 0e9108013b93
 [91mnpm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 [0m[91mnpm warn deprecated lodash.get@4.4.2: This package is deprecated. Use the optional chaining (?.) operator instead.
 [0m[91mnpm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
 [0m[91mnpm warn deprecated scmp@2.1.0: Just use Node.js's crypto.timingSafeEqual()
-[0m[91mnpm warn deprecated har-validator@5.1.5: this library is no longer supported
+[91mnpm warn deprecated har-validator@5.1.5: this library is no longer supported
 [0m[91mnpm warn deprecated request-promise@4.2.6: request-promise has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142
 [0m[91mnpm warn deprecated request@2.88.2: request has been deprecated, see https://github.com/request/request/issues/3142
-[0m[91mnpm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+[91mnpm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
 [0m[91mnpm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
 [0m[91mnpm warn deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
 [0m[91mnpm warn deprecated crypto@1.0.1: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
@@ -115,24 +125,28 @@ Step 7/10 : RUN npm install --legacy-peer-deps --no-audit --no-fund
 [0m[91mnpm warn deprecated glob@7.1.6: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 [0m[91mnpm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
 [0m[91mnpm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-[0m[91mnpm warn deprecated aws-sdk@2.1693.0: The AWS SDK for JavaScript (v2) has reached end-of-support, and no longer receives updates. Please migrate your code to use AWS SDK for JavaScript (v3). More info https://a.co/cUPnyil
-[0m[91mnpm error code 1
-npm error path /app/node_modules/puppeteer
-[0m[91mnpm error command failed
-npm error command sh -c node install.mjs
-npm error **INFO** Skipping Firefox download as instructed.
-npm error chrome-headless-shell (146.0.7680.153) downloaded to /root/.cache/puppeteer/chrome-headless-shell/linux-146.0.7680.153
-npm error Error: ERROR: Failed to set up chrome v146.0.7680.153! Set "PUPPETEER_SKIP_DOWNLOAD" env variable to skip download.
-npm error     at downloadBrowser (file:///app/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:26:15)
-npm error     at async Promise.all (index 0)
-npm error     at async downloadBrowsers (file:///app/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:84:9) {
-npm error   [cause]: Error: All providers failed for chrome 146.0.7680.153:
-npm error     - DefaultProvider: ENOSPC: no space left on device, write
-npm error       at installWithProviders (file:///app/node_modules/@puppeteer/browsers/lib/esm/install.js:108:11)
-npm error       at async install (file:///app/node_modules/@puppeteer/browsers/lib/esm/install.js:118:12)
-npm error       at async downloadBrowser (file:///app/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:14:24)
-npm error       at async Promise.all (index 0)
-npm error       at async downloadBrowsers (file:///app/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:84:9)
-npm error }
-[0m[91mnpm error A complete log of this run can be found in: /root/.npm/_logs/2026-04-15T08_27_21_938Z-debug-0.log
-[0mThe command '/bin/sh -c npm install --legacy-peer-deps --no-audit --no-fund' returned a non-zero code: 1
+[91mnpm warn deprecated aws-sdk@2.1693.0: The AWS SDK for JavaScript (v2) has reached end-of-support, and no longer receives updates. Please migrate your code to use AWS SDK for JavaScript (v3). More info https://a.co/cUPnyil
+
+added 803 packages in 35s
+failed to apply diff: write /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/88/fs/app/node_modules/chromium-bidi/lib/iife/mapperTab.js.map: no space left on device
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Stop Old Container)
+Stage "Stop Old Container" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Run New Container)
+Stage "Run New Container" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE
