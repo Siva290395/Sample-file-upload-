@@ -2,7 +2,11 @@ FROM node:20
 
 WORKDIR /app
 
+# Skip all browser downloads
 ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV CHROME_BIN=/usr/bin/google-chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
 COPY package*.json ./
 
