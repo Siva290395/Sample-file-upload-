@@ -46,3 +46,8 @@ helm upgrade prometheus prometheus-community/kube-prometheus-stack \
 
 
 kubectl rollout status deployment/prometheus-grafana -n monitoring
+
+
+
+kubectl port-forward svc/prometheus-grafana 3000:80 \
+  -n monitoring --address 0.0.0.0 &
