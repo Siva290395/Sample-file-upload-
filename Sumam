@@ -75,3 +75,21 @@ Step 5: Grafana → Data Sources → URL change pannu
 http://10.107.68.53:9090
 Save & Test → Green varunum ✅
 ClusterIP direct use pannrom - DNS bypass! Try pannu machi 🙏
+
+
+
+helm upgrade prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set grafana.adminPassword='Machi@123' \
+  --set grafana.sidecar.datasources.enabled=true \
+  --set grafana.additionalDataSources[0].name=Prometheus-Fix \
+  --set grafana.additionalDataSources[0].type=prometheus \
+  --set grafana.additionalDataSources[0].url=http://10.107.68.53:9090 \
+  --set grafana.additionalDataSources[0].access=proxy \
+  --set grafana.additionalDataSources[0].isDefault=false \
+  --timeout 3m
+Restart Pannu
+kubectl rollout restart deployment/prometheus-grafana -n monitoring
+sleep 60
+pkill -f "port-forward"
+kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring --address 0.0.0.0 &
