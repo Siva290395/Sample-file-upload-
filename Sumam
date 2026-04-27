@@ -6,11 +6,6 @@ helm upgrade prometheus prometheus-community/kube-prometheus-stack \
 Wait Pannu
 kubectl rollout status deployment/prometheus-grafana -n monitoring
 
-
-
-
-
-
 # Wait 1-2 mins
 Prometheus Pod Running aa Check Pannu
 kubectl get pods -n monitoring
