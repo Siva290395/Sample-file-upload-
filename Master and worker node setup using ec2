@@ -207,7 +207,9 @@ kubeadm join 172.31.10.5:6443 --token xxxxx \
     --discovery-token-ca-cert-hash sha256:xxxxx
 
 ⚠️ MACHI IMPORTANT: Indha join command COPY panniko! Worker ku venum!
-```
+```kubeadm join 172.31.5.68:6443 --token 20dztn.cvynul2ymfn4m76c \
+        --discovery-token-ca-cert-hash sha256:4a2ed567fbd0cf201974853dc0826e51e01e15167a6b7ab0bf912a84866ffb49
+
 
 ### Step 11: Kubeconfig Setup (Master la)
 
