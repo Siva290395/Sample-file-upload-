@@ -13,3 +13,23 @@ grafana-cli plugins install grafana-worldmap-panel
 grafana-cli plugins install vonage-status-panel
 
 grafana-cli plugins install grafana-polystat-panel
+
+
+cat <<EOF > grafana-values.yaml
+grafana:
+  adminPassword: 'Machi@123'
+  plugins:
+    - grafana-piechart-panel
+    - grafana-clock-panel
+    - grafana-worldmap-panel
+    - vonage-status-panel
+    - grafana-polystat-panel
+EOF
+
+# Upgrade pannu
+helm upgrade prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values grafana-values.yaml
+
+# Wait 2 minutes
+kubectl get pods -n monitoring | grep grafana
