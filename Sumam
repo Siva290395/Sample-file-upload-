@@ -38,3 +38,11 @@ kubectl rollout status deployment/prometheus-grafana -n monitoring
 
 kubectl port-forward svc/prometheus-grafana 3000:80 \
   -n monitoring --address 0.0.0.0 &
+
+
+
+
+kubectl patch configmap prometheus-grafana \
+  -n monitoring \
+  --type merge \
+  -p '{"data":{"datasources.yaml":"apiVersion: 1\ndatasources:\n- name: Prometheus\n  type: prometheus\n  url: http://prometheus-operated:9090\n  isDefault: true\n  access: proxy\n"}}'
