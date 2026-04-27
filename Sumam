@@ -33,3 +33,16 @@ helm upgrade prometheus prometheus-community/kube-prometheus-stack \
 
 # Wait 2 minutes
 kubectl get pods -n monitoring | grep grafana
+
+
+
+helm upgrade prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set grafana.adminPassword='Machi@123' \
+  --set grafana.plugins[0]=grafana-piechart-panel \
+  --set grafana.plugins[1]=vonage-status-panel \
+  --set grafana.plugins[2]=grafana-polystat-panel
+
+
+
+kubectl rollout status deployment/prometheus-grafana -n monitoring
