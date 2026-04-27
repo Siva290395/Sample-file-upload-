@@ -1,0 +1,444 @@
+# Machi! Kubeadm Full Step-by-Step Guide 🔥
+
+## 📋 Overview - Enna Panrom?
+
+```
+🖥️  MASTER NODE (1 EC2)  →  Control Plane
+🖥️  WORKER NODE (1 EC2)  →  Apps run agum
+📊  MONITORING           →  Master node la install panrom
+```
+
+---
+
+## 🚀 PHASE 1: AWS EC2 Setup
+
+### Step 1: 2 EC2 Instances Launch Pannu
+
+```
+AWS Console → EC2 → Launch Instance
+
+Instance 1 (MASTER):
+├── Name: k8s-master
+├── AMI: Ubuntu 22.04 LTS
+├── Type: t3.medium (2 CPU, 4GB RAM)
+├── Storage: 20GB
+└── Key Pair: create/select pannu
+
+Instance 2 (WORKER):
+├── Name: k8s-worker-1  
+├── AMI: Ubuntu 22.04 LTS
+├── Type: t3.medium (2 CPU, 4GB RAM)
+├── Storage: 20GB
+└── Key Pair: same key pair use pannu
+```
+
+### Step 2: Security Group Rules
+
+```
+MASTER NODE Security Group:
+┌──────────────┬──────────┬─────────────┐
+│ Port         │ Protocol │ Purpose     │
+├──────────────┼──────────┼─────────────┤
+│ 22           │ TCP      │ SSH         │
+│ 6443         │ TCP      │ API Server  │
+│ 2379-2380    │ TCP      │ etcd        │
+│ 10250        │ TCP      │ Kubelet     │
+│ 10251        │ TCP      │ Scheduler   │
+│ 10252        │ TCP      │ Controller  │
+│ 3000         │ TCP      │ Grafana     │
+│ 9090         │ TCP      │ Prometheus  │
+└──────────────┴──────────┴─────────────┘
+
+WORKER NODE Security Group:
+┌──────────────┬──────────┬─────────────┐
+│ Port         │ Protocol │ Purpose     │
+├──────────────┼──────────┼─────────────┤
+│ 22           │ TCP      │ SSH         │
+│ 10250        │ TCP      │ Kubelet     │
+│ 30000-32767  │ TCP      │ NodePort    │
+└──────────────┴──────────┴─────────────┘
+```
+
+---
+
+## 🔧 PHASE 2: Both Nodes la Run Pannu (MASTER + WORKER same commands)
+
+> ⚠️ **Machi Important:** Phase 2 commands RENDU nodes laye run pannu!
+
+### Step 3: SSH Connect Pannu
+
+```bash
+# Master node ku
+ssh -i "your-key.pem" ubuntu@<MASTER-PUBLIC-IP>
+
+# Worker node ku (new terminal open pannu)
+ssh -i "your-key.pem" ubuntu@<WORKER-PUBLIC-IP>
+```
+
+### Step 4: System Update
+
+```bash
+sudo apt-get update -y
+sudo apt-get upgrade -y
+```
+
+### Step 5: Swap Off Pannu (Mandatory!)
+
+```bash
+# K8s ku swap vendave vendaam
+sudo swapoff -a
+
+# Permanent ah off pannu
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+# Verify
+free -h
+# Swap: 0 0 0  → ipdhi varudha confirm pannu
+```
+
+### Step 6: Kernel Modules Load Pannu
+
+```bash
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
+
+### Step 7: Network Settings
+
+```bash
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+# Apply pannu
+sudo sysctl --system
+```
+
+### Step 8: Containerd Install (Container Runtime)
+
+```bash
+# Install
+sudo apt-get install -y containerd
+
+# Config folder create pannu
+sudo mkdir -p /etc/containerd
+
+# Default config generate pannu
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+# SystemdCgroup enable pannu (important!)
+sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' \
+  /etc/containerd/config.toml
+
+# Restart & Enable
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+
+# Verify
+sudo systemctl status containerd
+# ✅ Active: active (running)
+```
+
+### Step 9: Kubeadm, Kubelet, Kubectl Install
+
+```bash
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+
+# GPG Key add pannu
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Repo add pannu
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+  https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | \
+  sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Install
+sudo apt-get update -y
+sudo apt-get install -y kubelet kubeadm kubectl
+
+# Version lock (auto-upgrade agama irukkum)
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# Enable kubelet
+sudo systemctl enable kubelet
+
+# Verify
+kubeadm version
+kubectl version --client
+```
+
+---
+
+## 👑 PHASE 3: MASTER NODE ONLY
+
+> ⚠️ **Machi:** Indha phase commands MASTER node la MATTUM run pannu!
+
+### Step 10: Cluster Initialize Pannu
+
+```bash
+sudo kubeadm init \
+  --pod-network-cidr=10.244.0.0/16 \
+  --apiserver-advertise-address=<MASTER-PRIVATE-IP>
+
+# Example:
+# sudo kubeadm init \
+#   --pod-network-cidr=10.244.0.0/16 \
+#   --apiserver-advertise-address=172.31.10.5
+```
+
+```
+✅ Output la ipdhi varum:
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as regular user:
+  mkdir -p $HOME/.kube
+  ...
+
+Then you can join any number of worker nodes by running the following on each as root:
+kubeadm join 172.31.10.5:6443 --token xxxxx \
+    --discovery-token-ca-cert-hash sha256:xxxxx
+
+⚠️ MACHI IMPORTANT: Indha join command COPY panniko! Worker ku venum!
+```
+
+### Step 11: Kubeconfig Setup (Master la)
+
+```bash
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Verify
+kubectl get nodes
+# NAME         STATUS     ROLES           AGE
+# k8s-master   NotReady   control-plane   1m
+# (NotReady - network plugin install aagala, okay!)
+```
+
+### Step 12: Network Plugin Install (Flannel)
+
+```bash
+kubectl apply -f \
+  https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+# Wait 30 seconds, then check
+kubectl get nodes
+# NAME         STATUS   ROLES           AGE
+# k8s-master   Ready    control-plane   3m ✅
+
+kubectl get pods -n kube-flannel
+# ✅ All Running irukkanum
+```
+
+---
+
+## 👷 PHASE 4: WORKER NODE ONLY
+
+> ⚠️ **Machi:** Indha phase commands WORKER node la MATTUM run pannu!
+
+### Step 13: Worker Node Join Pannu
+
+```bash
+# Step 10 la copy pannina join command inga paste pannu
+sudo kubeadm join 172.31.10.5:6443 --token xxxxx \
+    --discovery-token-ca-cert-hash sha256:xxxxx
+
+# ✅ Output:
+# This node has joined the cluster!
+```
+
+### Step 14: Master la Verify Pannu
+
+```bash
+# Master node terminal la run pannu
+kubectl get nodes
+
+# OUTPUT:
+# NAME           STATUS   ROLES           AGE
+# k8s-master     Ready    control-plane   10m  ✅
+# k8s-worker-1   Ready    <none>          2m   ✅
+```
+
+---
+
+## 📊 PHASE 5: Monitoring Install - MASTER NODE la!
+
+> 💡 **Machi:** Prometheus + Grafana → **MASTER NODE la install panrom**
+> Worker nodes la automatically metrics collect agum (node-exporter daemonset)
+
+### Step 15: Helm Install (Master la)
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Verify
+helm version
+```
+
+### Step 16: Monitoring Namespace Create
+
+```bash
+kubectl create namespace monitoring
+```
+
+### Step 17: Prometheus + Grafana Install
+
+```bash
+# Repo add pannu
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# Install (kube-prometheus-stack = Prometheus + Grafana + AlertManager)
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set grafana.adminPassword='Machi@123' \
+  --set prometheus.prometheusSpec.retention=7d
+
+# 2-3 minutes wait pannu...
+```
+
+### Step 18: Monitoring Pods Check
+
+```bash
+kubectl get pods -n monitoring
+
+# OUTPUT (ippidhi varunum):
+# NAME                                                  READY   STATUS
+# prometheus-grafana-xxxxxxxxx                          3/3     Running ✅
+# prometheus-kube-state-metrics-xxxxxxxxx               1/1     Running ✅
+# prometheus-node-exporter-xxxxx (MASTER la)            1/1     Running ✅
+# prometheus-node-exporter-yyyyy (WORKER la)            1/1     Running ✅ ← Auto!
+# alertmanager-prometheus-kube-prometheus-alertmgr-0    2/2     Running ✅
+# prometheus-prometheus-kube-prometheus-prometheus-0    2/2     Running ✅
+```
+
+---
+
+## 🌐 PHASE 6: Grafana Access + Dashboards
+
+### Step 19: Grafana Access Pannu
+
+```bash
+# Master node la port-forward
+kubectl port-forward svc/prometheus-grafana 3000:80 \
+  -n monitoring --address 0.0.0.0 &
+
+# Browser la open pannu:
+# http://<MASTER-PUBLIC-IP>:3000
+# Username: admin
+# Password: Machi@123
+```
+
+### Step 20: Grafana Dashboards Import
+
+```
+Grafana → Left sidebar → Dashboards → Import
+
+📌 15760 → K8s Cluster Overview (Master + Worker all metrics)
+📌 1860  → Node Exporter Full (CPU, RAM, Disk per node)
+📌 13770 → Kubernetes API Server metrics
+📌 6417  → K8s Pod metrics
+
+Import button click → Load → Import!
+```
+
+---
+
+## 📈 Enna Metrics Kaanalam?
+
+### Master Node Metrics
+```
+✅ API Server request rate
+✅ etcd health & latency  
+✅ Scheduler queue depth
+✅ Controller manager status
+✅ Cluster CPU/Memory total
+```
+
+### Worker Node Metrics
+```
+✅ Per-node CPU usage
+✅ Per-node Memory usage
+✅ Disk I/O
+✅ Network in/out
+✅ Running pods count
+✅ Container resource usage
+```
+
+### Useful Commands
+```bash
+# All nodes status
+kubectl get nodes -o wide
+
+# Node detailed info
+kubectl describe node k8s-master
+kubectl describe node k8s-worker-1
+
+# All pods across all nodes
+kubectl get pods -A -o wide
+
+# Node resource usage (metrics-server venum)
+kubectl top nodes
+kubectl top pods -A
+```
+
+---
+
+## 🗺️ Final Architecture
+
+```
+┌─────────────────────────────────────┐
+│         MASTER NODE (EC2)           │
+│  ┌─────────────────────────────┐   │
+│  │  API Server | etcd           │   │
+│  │  Scheduler  | Controller     │   │
+│  │  Prometheus | Grafana        │   │  ← Monitoring here!
+│  └─────────────────────────────┘   │
+└────────────────┬────────────────────┘
+                 │ kubeadm join
+┌────────────────▼────────────────────┐
+│         WORKER NODE (EC2)           │
+│  ┌─────────────────────────────┐   │
+│  │  kubelet | kube-proxy        │   │
+│  │  Your Apps (Pods)            │   │
+│  │  node-exporter (auto!)       │   │  ← Metrics collect agum!
+│  └─────────────────────────────┘   │
+└─────────────────────────────────────┘
+```
+
+---
+
+## ✅ Quick Checklist
+
+```
+BOTH NODES:
+□ Swap off
+□ Containerd install
+□ kubeadm, kubelet, kubectl install
+
+MASTER ONLY:
+□ kubeadm init
+□ kubeconfig setup
+□ Flannel install
+□ Helm install
+□ Prometheus + Grafana install
+
+WORKER ONLY:
+□ kubeadm join command run
+
+VERIFY:
+□ kubectl get nodes → Both Ready
+□ kubectl get pods -n monitoring → All Running
+□ Grafana http://<master-ip>:3000 → Login OK
+```
+
+Machi ippidhi follow pannaa clean ah cluster ready agum! Enna doubt na kelu! 🚀
