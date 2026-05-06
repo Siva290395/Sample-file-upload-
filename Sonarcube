@@ -8,3 +8,6 @@ docker run -d \
 curl -u admin:admin \
   -X POST "http://localhost:9000/api/users/change_password" \
   -d "login=admin&previousPassword=admin&password=Admin@1234"
+
+
+sqp_879da83f95679d6c405a6678472fa5f96bb0d621
