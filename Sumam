@@ -1,4 +1,4 @@
-helm upgrade prometheus prometheus-community/kube-prometheus-stack \
+huhelm upgrade prometheus prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --set grafana.adminPassword='Machi@123' \
   --set grafana.sidecar.datasources.enabled=true \
@@ -93,3 +93,4 @@ kubectl rollout restart deployment/prometheus-grafana -n monitoring
 sleep 60
 pkill -f "port-forward"
 kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring --address 0.0.0.0 &
+curl http://localhost:5000
