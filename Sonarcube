@@ -3,3 +3,8 @@ docker run -d \
   -p 9000:9000 \
   -v sonarqube_data:/opt/sonarqube/data \
   sonarqube:latest
+
+
+curl -u admin:admin \
+  -X POST "http://localhost:9000/api/users/change_password" \
+  -d "login=admin&previousPassword=admin&password=Admin@1234"
