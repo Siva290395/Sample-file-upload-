@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone Frontend Repo') {
             steps {
-                git branch: 'Sivakumar',
+                git branch: 'dev',
                     credentialsId: 'github-credentials', 
                     url: 'https://github.com/Locate360/Locate360-FieldExecutive-Panel.git'
             }
