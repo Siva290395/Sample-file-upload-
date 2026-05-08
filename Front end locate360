@@ -2,17 +2,17 @@ pipeline {
     agent any
 
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
-        S3_BUCKET = 'eflow-bucket-frontend'
-        CLOUDFRONT_DISTRIBUTION_ID = 'E3PYM003CWT2QM'
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        S3_BUCKET = 'locate-fieldexepanel-qa '
+        CLOUDFRONT_DISTRIBUTION_ID = 'E3BTM8ELYCDKHF'
     }
 
     stages {
         stage('Clone Frontend Repo') {
             steps {
-                git branch: 'sridhar',
-                    credentialsId: 'github-creds', 
-                    url: 'https://github.com/cloudhostingky-alt/E-flow-InstructorWeb.git'
+                git branch: 'Sivakumar',
+                    credentialsId: 'github-credentials', 
+                    url: 'https://github.com/Locate360/Locate360-FieldExecutive-Panel.git'
             }
         }
 
