@@ -1,10 +1,14 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS-20'
+    }
+
     environment {
-        AWS_DEFAULT_REGION          = 'ap-south-1'
-        S3_BUCKET                   = 'locate-fieldexepanel-qa'
-        CLOUDFRONT_DISTRIBUTION_ID  = 'E3BTM8ELYCDKHF'
+        AWS_DEFAULT_REGION         = 'ap-south-1'
+        S3_BUCKET                  = 'locate-fieldexepanel-qa'
+        CLOUDFRONT_DISTRIBUTION_ID = 'E3BTM8ELYCDKHF'
     }
 
     stages {
@@ -20,10 +24,12 @@ pipeline {
         stage('Install & Build') {
             steps {
                 sh '''
+                    node --version
+                    npm --version
                     rm -rf node_modules dist
-                    npm install
+                    npm install --legacy-peer-deps
                     export NODE_OPTIONS="--max-old-space-size=4096"
-                    npm run build
+                    npx vite build
                 '''
             }
         }
@@ -50,7 +56,17 @@ pipeline {
                 }
             }
         }
-
     }
 
+    post {
+        success {
+            echo '✅ Locate360 Deployment SUCCESS!'
+        }
+        failure {
+            echo '❌ Deployment FAILED! Check logs.'
+        }
+        always {
+            cleanWs()
+        }
+    }
 }
