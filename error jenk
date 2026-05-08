@@ -1,0 +1,114 @@
+Started by user devops
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/Locate360
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Tool Install)
+[Pipeline] tool
+[Pipeline] envVarsForTool
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Clone Frontend Repo)
+[Pipeline] tool
+[Pipeline] envVarsForTool
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] git
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+using credential github-credentials
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/Locate360/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/Locate360/Locate360-FieldExecutive-Panel.git # timeout=10
+Fetching upstream changes from https://github.com/Locate360/Locate360-FieldExecutive-Panel.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.0'
+using GIT_ASKPASS to set credentials github-cred
+ > git fetch --tags --force --progress -- https://github.com/Locate360/Locate360-FieldExecutive-Panel.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/dev^{commit} # timeout=10
+Checking out Revision 5950e88f271b93eb0f51a3bf93393581373f939a (refs/remotes/origin/dev)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 5950e88f271b93eb0f51a3bf93393581373f939a # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D dev # timeout=10
+ > git checkout -b dev 5950e88f271b93eb0f51a3bf93393581373f939a # timeout=10
+Commit message: "Merge pull request #94 from Locate360/Kalpana"
+ > git rev-list --no-walk 5950e88f271b93eb0f51a3bf93393581373f939a # timeout=10
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install & Build)
+[Pipeline] tool
+[Pipeline] envVarsForTool
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ node --version
+v20.20.2
++ npm --version
+10.8.2
++ rm -rf node_modules dist
++ npm install --legacy-peer-deps
+
+added 205 packages, and audited 206 packages in 4s
+
+40 packages are looking for funding
+  run `npm fund` for details
+
+4 vulnerabilities (1 moderate, 3 high)
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
++ export NODE_OPTIONS=--max-old-space-size=4096
++ npx vite build
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 47 modules transformed.
+[31m✗[39m Build failed in 682ms
+[31merror during build:
+[31m[vite:load-fallback] Could not load /var/lib/jenkins/workspace/Locate360/src/pages/app/Support/Support.jsx (imported by src/routes/RouteConfig.jsx): ENOENT: no such file or directory, open '/var/lib/jenkins/workspace/Locate360/src/pages/app/Support/Support.jsx'[31m
+    at async open (node:internal/fs/promises:637:25)
+    at async Object.readFile (node:internal/fs/promises:1249:14)
+    at async Object.handler (file:///var/lib/jenkins/workspace/Locate360/node_modules/vite/dist/node/chunks/config.js:33169:21)
+    at async PluginDriver.hookFirstAndGetPlugin (file:///var/lib/jenkins/workspace/Locate360/node_modules/rollup/dist/es/shared/node-entry.js:22453:28)
+    at async file:///var/lib/jenkins/workspace/Locate360/node_modules/rollup/dist/es/shared/node-entry.js:21445:33
+    at async Queue.work (file:///var/lib/jenkins/workspace/Locate360/node_modules/rollup/dist/es/shared/node-entry.js:22681:32)[39m
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy to AWS)
+Stage "Deploy to AWS" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] cleanWs
+[WS-CLEANUP] Deleting project workspace...
+[WS-CLEANUP] Deferred wipeout is used...
+[WS-CLEANUP] done
+[Pipeline] echo
+❌ Deployment FAILED! Check logs.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE
