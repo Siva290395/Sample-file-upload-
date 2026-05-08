@@ -1,0 +1,58 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_DEFAULT_REGION          = 'ap-south-1'
+        S3_BUCKET                   = 'locate-fieldexepanel-qa'
+        CLOUDFRONT_DISTRIBUTION_ID  = 'E3BTM8ELYCDKHF'
+    }
+
+    stages {
+
+        stage('Clone Frontend Repo') {
+            steps {
+                git branch: 'dev',
+                    credentialsId: 'github-credentials',
+                    url: 'https://github.com/Locate360/Locate360-FieldExecutive-Panel.git'
+            }
+        }
+
+        stage('Install & Build') {
+            steps {
+                sh '''
+                    # Clean install - fresh start
+                    rm -rf node_modules dist
+
+                    # Install dependencies
+                    npm install
+
+                    # Memory fix + Build
+                    export NODE_OPTIONS="--max-old-space-size=4096"
+                    npm run build
+                '''
+            }
+        }
+
+        stage('Deploy to AWS') {
+            steps {
+                withCredentials([
+                    aws(credentialsId: 'aws-cred',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        echo "Uploading to S3..."
+                        aws s3 sync dist/ s3://${S3_BUCKET} \
+                            --region ${AWS_DEFAULT_REGION} \
+                            --delete
+
+                        echo "Invalidating CloudFront Cache..."
+                        aws cloudfront create-invalidation \
+                            --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
+                            --paths "/*" \
+                            --region us-east-1
+                    '''
+                }
+            }
+        }
+    }
