@@ -29,7 +29,7 @@ pipeline {
             steps {
                 // Using 'aws' instead of 'usernamePassword' to match your credential type
                 withCredentials([
-                    aws(credentialsId: 'aws-credentials', 
+                    aws(credentialsId: 'aws-cred', 
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
