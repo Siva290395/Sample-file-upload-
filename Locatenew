@@ -20,13 +20,8 @@ pipeline {
         stage('Install & Build') {
             steps {
                 sh '''
-                    # Clean install - fresh start
                     rm -rf node_modules dist
-
-                    # Install dependencies
                     npm install
-
-                    # Memory fix + Build
                     export NODE_OPTIONS="--max-old-space-size=4096"
                     npm run build
                 '''
@@ -55,4 +50,7 @@ pipeline {
                 }
             }
         }
+
     }
+
+}
