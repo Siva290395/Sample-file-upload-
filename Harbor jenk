@@ -96,13 +96,13 @@ pipeline {
 
 sudo python3 -c "
 import json
-config = {'insecure-registries': ['100.48.195.166:80']}
+config = {'insecure-registries': ['100.48.195.166:80', '10.247.117.48']}
 with open('/etc/docker/daemon.json', 'w') as f:
     json.dump(config, f, indent=2)
 "
-Step 2 — Restart Docker:
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 sudo docker start sonarqube
-Step 3 — Login with port 80:
-docker login 100.48.195.166:80
+cd /opt/harbor && sudo docker compose up -d
+Then try:
+docker login 10.247.117.48
