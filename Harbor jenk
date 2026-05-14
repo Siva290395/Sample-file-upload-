@@ -95,14 +95,17 @@ pipeline {
 
 
 
-
-sudo rm -f /etc/docker/daemon.json
-
-cat << 'EOF' | sudo tee /etc/docker/daemon.json
-{"insecure-registries":["100.48.195.166","172.31.2.177"]}
-EOF
-
+sudo python3 -c "
+import json
+config = {'insecure-registries': ['100.48.195.166', '172.31.2.177']}
+with open('/etc/docker/daemon.json', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+Then:
+sudo cat /etc/docker/daemon.json
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 sudo docker start sonarqube
-sudo docker info | grep -A3 insecure
+sudo docker info | grep -A3 -i insecure
+Now must show the IPs! Then try login:
+docker login 100.48.195.166
