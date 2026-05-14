@@ -92,3 +92,17 @@ pipeline {
         }
     }
 }
+
+
+
+
+sudo rm -f /etc/docker/daemon.json
+
+cat << 'EOF' | sudo tee /etc/docker/daemon.json
+{"insecure-registries":["100.48.195.166","172.31.2.177"]}
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+sudo docker start sonarqube
+sudo docker info | grep -A3 insecure
