@@ -1,0 +1,94 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME        = 'abc-backend'
+        HARBOR_REGISTRY = "100.48.195.166"
+        HARBOR_PROJECT  = "library"
+        IMAGE_TAG       = "${env.BUILD_NUMBER}"
+        FULL_IMAGE      = "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${APP_NAME}:${IMAGE_TAG}"
+    }
+
+    stages {
+
+        stage('Clone Backend Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Siva290395/abc-backend.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh "${tool 'SonarScanner'}/bin/sonar-scanner \
+                          -Dsonar.projectKey=abc-backend \
+                          -Dsonar.projectName='ABC Backend' \
+                          -Dsonar.sources=. \
+                          -Dsonar.exclusions=node_modules/**,**/*.test.js"
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${FULL_IMAGE} ."
+            }
+        }
+
+        stage('Login to Harbor') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'harbor-credentials',
+                    usernameVariable: 'HARBOR_USER',
+                    passwordVariable: 'HARBOR_PW'
+                )]) {
+                    sh '''
+                    echo "$HARBOR_PW" | docker login 100.48.195.166 \
+                        -u "$HARBOR_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push to Harbor') {
+            steps {
+                sh "docker push ${FULL_IMAGE}"
+                sh "docker tag ${FULL_IMAGE} ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${APP_NAME}:latest"
+                sh "docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${APP_NAME}:latest"
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                sh 'docker rm -f backend || true'
+            }
+        }
+
+        stage('Run New Container') {
+            steps {
+                sh "docker run -d -p 5000:5000 --name backend ${FULL_IMAGE}"
+                sh 'docker ps'
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker logout ${HARBOR_REGISTRY}"
+        }
+        success {
+            echo "✅ Pipeline SUCCESS — Build #${env.BUILD_NUMBER} pushed to Harbor!"
+        }
+        failure {
+            echo "❌ Pipeline FAILED — Check the stage that turned red."
+        }
+    }
+}
