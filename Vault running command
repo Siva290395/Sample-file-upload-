@@ -1,0 +1,17 @@
+Every Time You Open Terminal — Run This:
+Terminal 1 — Start Vault Server:
+export VAULT_ADDR='http://127.0.0.1:8200'
+sudo vault server -config=/etc/vault.hcl
+Terminal 2 — Unseal Vault:
+export VAULT_ADDR='http://127.0.0.1:8200'
+
+vault operator unseal 7hTSDWAsYQ1Hw1sJlVQvIJglCNTlnEXOryg2/9WF6616
+vault operator unseal nx79OXrYxU0zm4lGSDv92qNNoiGW7nIHyydXbOzFKJxK
+vault operator unseal JL7igmwor1NuIvFrhVt/S+pbJ+EgEVqE91bG9Ke0Zqzk
+
+vault login hvs.ifhFQP1tR6da3o9lP1ijDiHk
+Then open browser:
+http://localhost:8200
+Also Start Harbor & SonarQube:
+cd /opt/harbor && sudo docker compose up -d
+sudo docker start sonarqube
