@@ -25,3 +25,7 @@ kubectl port-forward \
   -n monitoring \
   svc/prometheus-kube-prometheus-prometheus \
   9090:9090
+kubectl exec -it prometheus-grafana-xxxxxxx \
+  -n monitoring \
+  -c grafana \
+  -- grafana-cli admin reset-admin-password admin123
