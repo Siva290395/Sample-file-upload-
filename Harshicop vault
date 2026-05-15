@@ -65,3 +65,10 @@ Vault URL
 http://localhost:8200
 Token
 root
+
+
+this is everytime we use for vault opening,[open new terminal and run below command]
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='root'
+
