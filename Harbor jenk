@@ -106,3 +106,10 @@ sudo docker start sonarqube
 cd /opt/harbor && sudo docker compose up -d
 Then try:
 docker login 10.247.117.48
+
+
+
+sudo docker update --restart always \
+  harbor-core harbor-db harbor-portal \
+  harbor-log harbor-jobservice nginx \
+  registry registryctl redis
