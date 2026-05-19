@@ -1,0 +1,90 @@
+VS Code-ல 2 Files Create பண்ணு
+File 1 → variables.tf
+variable "region" {
+  description = "AWS Region"
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "bucket_name" {
+  description = "S3 Bucket பேரு"
+  type        = string
+  default     = "my-app-frontend-2024"
+}
+
+variable "environment" {
+  description = "dev or prod"
+  type        = string
+  default     = "dev"
+}
+File 2 → main.tf
+provider "aws" {
+  region = var.region
+}
+
+resource "aws_s3_bucket" "frontend" {
+  bucket = var.bucket_name
+
+  tags = {
+    Environment = var.environment
+    Name        = "Frontend Bucket"
+  }
+}
+Terminal-ல Run பண்ணு
+terraform plan
+Output இப்படி வரும்:
++ bucket      = "my-app-frontend-2024"
++ environment = "dev"
+
+Plan: 1 to add ✅
+PHASE 2 — Outputs கத்துக்கோ
+என்னதுக்கு Outputs?
+Create ஆன பிறகு — URL, ARN, ID
+இதை automatically print பண்ண
+File 3 → outputs.tf
+output "bucket_name" {
+  description = "Bucket பேரு"
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "bucket_arn" {
+  description = "Bucket ARN"
+  value       = aws_s3_bucket.frontend.arn
+}
+Terminal-ல Run பண்ணு:
+terraform apply
+Apply complete!
+
+Outputs:
+bucket_name = "my-app-frontend-2024"    ✅
+bucket_arn  = "arn:aws:s3:::my-app..."  ✅
+PHASE 3 — Full Project Structure
+இப்போ உன் folder இப்படி இருக்கணும்:
+terraform-learn/
+├── main.tf          ← Resources
+├── variables.tf     ← Variables
+├── outputs.tf       ← Outputs
+└── .terraform/      ← Auto created (touch பண்ணாத)
+PHASE 4 — EC2 Add பண்ணுவோம்
+variables.tf — இதை add பண்ணு:
+variable "instance_type" {
+  description = "EC2 size"
+  type        = string
+  default     = "t2.micro"
+}
+main.tf — EC2 add பண்ணு:
+# EC2 Instance
+resource "aws_instance" "backend" {
+  ami           = "ami-0f5ee92e2d63afc18"  # Ubuntu 22.04
+  instance_type = var.instance_type
+
+  tags = {
+    Name        = "Backend-Server"
+    Environment = var.environment
+  }
+}
+outputs.tf — EC2 output add பண்ணு:
+output "ec2_public_ip" {
+  description = "Backend Server IP"
+  value       = aws_instance.backend.public_ip
+}
