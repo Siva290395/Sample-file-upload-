@@ -1,0 +1,78 @@
+STEP 1: EC2-ல Connect ஆகு
+உன் Laptop Terminal-ல:
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
+✅ EC2-ல இப்போ இருக்க
+STEP 2: EC2-ல Terraform Install
+sudo apt update
+முடிஞ்சதும்:
+sudo apt install wget unzip -y
+முடிஞ்சதும்:
+wget https://releases.hashicorp.com/terraform/1.7.0/terraform_1.7.0_linux_amd64.zip
+முடிஞ்சதும்:
+unzip terraform_1.7.0_linux_amd64.zip
+முடிஞ்சதும்:
+sudo mv terraform /usr/local/bin/
+Check பண்ணு:
+terraform --version
+இது வந்தா ✅:
+Terraform v1.7.0
+STEP 3: EC2-ல AWS Configure
+EC2-க்கு AWS Permission வேணும்:
+aws configure
+AWS Access Key ID: உன் key
+AWS Secret Access Key: உன் secret
+Default region: ap-south-1
+Default output: json
+STEP 4: VS Code-ல Remote SSH Setup
+இதுவே Magic! 🪄 VS Code-ல இருந்தே EC2-ல code எழுதலாம்!
+VS Code திற
+Extensions → "Remote - SSH" install பண்ணு
+Left side Remote Explorer click பண்ணு
++ click பண்ணு → இது type பண்ணு:
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
+Connect பண்ணு
+✅ இப்போ VS Code நேரடியா EC2-ல Open ஆகும்!
+STEP 5: EC2-ல Folder & File Create
+VS Code Terminal-ல (இது EC2 Terminal):
+mkdir s3-practice
+cd s3-practice
+VS Code-ல New File → main.tf
+STEP 6: S3 Code எழுது
+# AWS Provider
+provider "aws" {
+  region = "ap-south-1"
+}
+
+# S3 Bucket Create
+resource "aws_s3_bucket" "my_bucket" {
+  bucket = "locate360-my-bucket-2024"
+
+  tags = {
+    Name = "Locate360 Bucket"
+  }
+}
+
+# Bucket Private வச்சிரு
+resource "aws_s3_bucket_acl" "my_bucket_acl" {
+  bucket = aws_s3_bucket.my_bucket.id
+  acl    = "private"
+}
+
+# S3 Bucket Name Output பாரு
+output "bucket_name" {
+  value = aws_s3_bucket.my_bucket.bucket
+}
+STEP 7: Run பண்ணு
+VS Code Terminal-ல (EC2-ல run ஆகும்):
+terraform init
+✅ Ready
+terraform plan
+✅ Preview பாரு - S3 create ஆகும்னு காட்டும்
+terraform apply
+Enter a value: yes
+✅ S3 Bucket Create ஆச்சு! 🎉
+STEP 8: AWS Console-ல Check பண்ணு
+AWS → S3 → locate360-my-bucket-2024 இருக்கா பாரு ✅
+Delete பண்ண:
+terraform destroy
+Enter a value: yes
