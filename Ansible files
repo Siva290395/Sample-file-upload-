@@ -1,4 +1,4 @@
-jinano roles/jenkins/tasks/main.yml
+jijinano roles/jenkins/tasks/main.yml
 எல்லாம் delete பண்ணி இதை paste பண்ணு:
 ---
 - name: Install Java 17
@@ -49,3 +49,4 @@ jinano roles/jenkins/tasks/main.yml
     msg: "Jenkins Password: {{ jenkins_pass.stdout }}"
 ansible jenkins_server -i inventory.ini -m shell -a "sudo systemctl status jenkins" -b
 ansible jenkins_server -i inventory.ini -m shell -a "sudo java -version" -b
+ansible jenkins_server -i inventory.ini -m shell -a "sudo sed -i 's|^JAVA_CMD=.*|JAVA_CMD=/usr/bin/java|' /etc/sysconfig/jenkins && sudo systemctl daemon-reload && sudo systemctl restart jenkins" -b
