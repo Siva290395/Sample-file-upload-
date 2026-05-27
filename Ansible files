@@ -1,54 +1,26 @@
-Step 2: Main Task File
-nano roles/jenkins/tasks/main.yml
-இதை paste பண்ணு:
 ---
-# Step 1: Java 21 Install
 - name: Install Java 21
-  apt:
-    name: openjdk-21-jdk
+  yum:
+    name: java-21-amazon-corretto
     state: present
-    update_cache: yes
 
-# Step 2: Jenkins Key Add
+- name: Add Jenkins Repo
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
 - name: Add Jenkins GPG Key
-  apt_key:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+  rpm_key:
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
     state: present
 
-# Step 3: Jenkins Repo Add
-- name: Add Jenkins Repository
-  apt_repository:
-    repo: "deb https://pkg.jenkins.io/debian-stable binary/"
-    state: present
-    update_cache: yes
-
-# Step 4: Jenkins Install
-- name: Install Jenkins Latest LTS
-  apt:
+- name: Install Jenkins
+  yum:
     name: jenkins
-    state: latest
-    update_cache: yes
+    state: present
 
-# Step 5: Jenkins Start
-- name: Start and Enable Jenkins
+- name: Start Jenkins
   service:
     name: jenkins
     state: started
     enabled: yes
-
-# Step 6: Port 8080 Open
-- name: Allow Jenkins Port 8080
-  ufw:
-    rule: allow
-    port: "8080"
-    proto: tcp
-
-# Step 7: Initial Password எடு
-- name: Get Jenkins Initial Password
-  command: cat /var/lib/jenkins/secrets/initialAdminPassword
-  register: jenkins_password
-  ignore_errors: yes
-
-- name: Show Jenkins Password
-  debug:
-    msg: "Jenkins Initial Password: {{ jenkins_password.stdout }}"
