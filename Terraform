@@ -1,0 +1,456 @@
+Local Ubuntu Server-la Terraform & Ansible Setup
+Step by step, entha folder-la என்ன பண்றோம் nu clear-a solren! 🙏
+🖥️ PHASE 1 — Ubuntu Server Ready Pannu
+Step 1 — System Update
+sudo apt update && sudo apt upgrade -y
+🔧 PHASE 2 — Tools Install Pannu
+Step 2 — Terraform Install
+# Hashicorp key add pannu
+wget -O- https://apt.releases.hashicorp.com/gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+# Repository add pannu
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+  https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+# Install pannu
+sudo apt update && sudo apt install terraform -y
+
+# Version check
+terraform --version
+Step 3 — AWS CLI Install
+# Download
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+# Unzip
+sudo apt install unzip -y
+unzip awscliv2.zip
+
+# Install
+sudo ./aws/install
+
+# Version check
+aws --version
+Step 4 — Ansible Install
+sudo apt install ansible -y
+
+# Version check
+ansible --version
+Step 5 — kubectl Install (EKS-ku)
+# Download
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+# Install
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Version check
+kubectl version --client
+🔑 PHASE 3 — AWS Credentials Setup
+Step 6 — AWS Console-la Key Create Pannu
+1. AWS Console → IAM → Users → உன்னோட User select pannu
+2. Security Credentials tab → Click pannu
+3. Access Keys → Create Access Key → CLI select pannu
+4. Access Key ID & Secret Access Key — COPY PANNIKO!
+Step 7 — Ubuntu-la AWS Configure Pannu
+aws configure
+AWS Access Key ID:     AKIA************  ← உன்னோட key paste pannu
+AWS Secret Access Key: ******************  ← secret paste pannu
+Default region name:   ap-south-1          ← Mumbai (or உன் region)
+Default output format: json
+✅ Verify pannu:
+aws sts get-caller-identity
+# உன் Account ID, User info வரும்
+Step 8 — SSH Key Pair Create Pannu (EC2 login-ku)
+# AWS-la key pair create pannu
+aws ec2 create-key-pair \
+  --key-name my-key-pair \
+  --query 'KeyMaterial' \
+  --output text > ~/.ssh/my-key-pair.pem
+
+# Permission set pannu (MANDATORY!)
+chmod 400 ~/.ssh/my-key-pair.pem
+
+# Verify
+ls -la ~/.ssh/my-key-pair.pem
+📁 PHASE 4 — Project Folder Structure Create
+Step 9 — Folders Create Pannu
+# Home directory-la project create pannurom
+cd ~
+mkdir -p my-infra/terraform
+mkdir -p my-infra/ansible/roles
+
+# Folder check
+ls -la my-infra/
+my-infra/
+├── terraform/      ← Terraform files ellam idha
+└── ansible/        ← Ansible files ellam idha
+    └── roles/
+📝 PHASE 5 — Terraform Files Create
+Step 10 — terraform folder-ku po
+cd ~/my-infra/terraform
+Step 11 — variables.tf Create Pannu
+nano variables.tf
+Idha paste pannu:
+variable "aws_region" {
+  default = "ap-south-1"
+}
+
+variable "instance_type" {
+  default = "t3.micro"
+}
+
+variable "key_name" {
+  default = "my-key-pair"
+}
+
+variable "bucket_name" {
+  default = "my-app-bucket-20240101"  # Unique name kudukanum!
+}
+
+variable "cluster_name" {
+  default = "my-eks-cluster"
+}
+Save: Ctrl+X → Y → Enter
+Step 12 — main.tf Create Pannu
+nano main.tf
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+Step 13 — ec2.tf Create Pannu
+nano ec2.tf
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+resource "aws_security_group" "web_sg" {
+  name   = "web-sg"
+  vpc_id = data.aws_vpc.default.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "web_servers" {
+  count                  = 2
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  tags = {
+    Name = "WebServer-${count.index + 1}"
+  }
+}
+Step 14 — s3.tf Create Pannu
+nano s3.tf
+resource "aws_s3_bucket" "app_bucket" {
+  bucket = var.bucket_name
+  tags = {
+    Name = "App-Bucket"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "pab" {
+  bucket                  = aws_s3_bucket.app_bucket.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "policy" {
+  bucket = aws_s3_bucket.app_bucket.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = "*"
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_bucket.app_bucket.arn}/*"
+    }]
+  })
+  depends_on = [aws_s3_bucket_public_access_block.pab]
+}
+Step 15 — cloudfront.tf Create Pannu
+nano cloudfront.tf
+resource "aws_cloudfront_distribution" "cdn" {
+  origin {
+    domain_name = aws_s3_bucket.app_bucket.bucket_regional_domain_name
+    origin_id   = "S3Origin"
+  }
+
+  enabled             = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "S3Origin"
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+    }
+  }
+
+  restrictions {
+    geo_restriction { restriction_type = "none" }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+Step 16 — eks.tf Create Pannu
+nano eks.tf
+# EKS Cluster Role
+resource "aws_iam_role" "eks_role" {
+  name = "eks-cluster-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_policy" {
+  role       = aws_iam_role.eks_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+# EKS Cluster
+resource "aws_eks_cluster" "main" {
+  name     = var.cluster_name
+  role_arn = aws_iam_role.eks_role.arn
+  vpc_config {
+    subnet_ids = data.aws_subnets.default.ids
+  }
+  depends_on = [aws_iam_role_policy_attachment.eks_policy]
+}
+
+# Node Role
+resource "aws_iam_role" "node_role" {
+  name = "eks-node-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "node_1" {
+  role       = aws_iam_role.node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+resource "aws_iam_role_policy_attachment" "node_2" {
+  role       = aws_iam_role.node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+resource "aws_iam_role_policy_attachment" "node_3" {
+  role       = aws_iam_role.node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+# Worker Nodes
+resource "aws_eks_node_group" "workers" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "workers"
+  node_role_arn   = aws_iam_role.node_role.arn
+  subnet_ids      = data.aws_subnets.default.ids
+  instance_types  = ["t3.medium"]
+
+  scaling_config {
+    desired_size = 2
+    max_size     = 3
+    min_size     = 1
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.node_1,
+    aws_iam_role_policy_attachment.node_2,
+    aws_iam_role_policy_attachment.node_3,
+  ]
+}
+Step 17 — outputs.tf Create Pannu
+nano outputs.tf
+output "ec2_public_ips" {
+  value = aws_instance.web_servers[*].public_ip
+}
+
+output "s3_bucket" {
+  value = aws_s3_bucket.app_bucket.bucket
+}
+
+output "cloudfront_url" {
+  value = aws_cloudfront_distribution.cdn.domain_name
+}
+
+output "eks_endpoint" {
+  value = aws_eks_cluster.main.endpoint
+}
+🚀 PHASE 6 — Terraform Run Pannu
+Step 18 — terraform folder-la irukka check pannu
+# Idha run panna CORRECT location
+cd ~/my-infra/terraform
+
+# Files ellam irukka check pannu
+ls -la
+main.tf
+variables.tf
+ec2.tf
+s3.tf
+cloudfront.tf
+eks.tf
+outputs.tf
+Step 19 — Terraform Init
+terraform init
+✅ Output varum:
+Terraform has been successfully initialized!
+Step 20 — Terraform Plan (Dry run — actual create aagadhu)
+terraform plan
+✅ Enenna create aagum nu list varum — check pannu
+Step 21 — Terraform Apply (ACTUAL CREATE!)
+terraform apply -auto-approve
+⏳ Wait pannu:
+EC2 → ~2 mins
+S3 → ~1 min
+CloudFront → ~5 mins
+EKS → ~15 mins (patience!)
+✅ Complete aana pinbu:
+ec2_public_ips = ["13.235.x.x", "65.0.x.x"]
+s3_bucket = "my-app-bucket-20240101"
+cloudfront_url = "xxxxx.cloudfront.net"
+eks_endpoint = "https://xxxxx.gr7.ap-south-1.eks.amazonaws.com"
+📋 PHASE 7 — Ansible Setup
+Step 22 — Ansible Folder-ku Po
+cd ~/my-infra/ansible
+Step 23 — Inventory File Create Pannu
+EC2 IP addresses — terraform output-la vandhadha use pannu!
+nano inventory.ini
+[webservers]
+server1 ansible_host=13.235.x.x ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/my-key-pair.pem
+server2 ansible_host=65.0.x.x ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/my-key-pair.pem
+⚠️ 13.235.x.x and 65.0.x.x — idha உன்னோட actual EC2 IP-la replace pannu!
+Step 24 — Playbook Create Pannu
+nano playbook.yml
+---
+- name: Web Server Setup
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: System update
+      yum:
+        name: "*"
+        state: latest
+
+    - name: Nginx install
+      yum:
+        name: nginx
+        state: present
+
+    - name: Nginx start
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Docker install
+      yum:
+        name: docker
+        state: present
+
+    - name: Docker start
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Sample page create
+      copy:
+        content: "<h1>Server {{ inventory_hostname }} is Running!</h1>"
+        dest: /usr/share/nginx/html/index.html
+Step 25 — Connection Test Pannu
+# EC2 ready aagardhu ku 2 min wait pannu, aprom:
+ansible -i inventory.ini webservers -m ping
+✅ Success:
+server1 | SUCCESS => {"ping": "pong"}
+server2 | SUCCESS => {"ping": "pong"}
+Step 26 — Playbook Run Pannu
+ansible-playbook -i inventory.ini playbook.yml
+✅ Output:
+PLAY RECAP
+server1 : ok=6  changed=5  failed=0
+server2 : ok=6  changed=5  failed=0
+🎯 PHASE 8 — EKS Connect Pannu
+Step 27 — kubeconfig Update
+aws eks update-kubeconfig \
+  --region ap-south-1 \
+  --name my-eks-cluster
+Step 28 — Verify
+kubectl get nodes
+kubectl get pods --all-namespaces
+✅ Final Checklist
+PHASE 1  ✅ Ubuntu update
+PHASE 2  ✅ Terraform, AWS CLI, Ansible, kubectl install
+PHASE 3  ✅ AWS credentials configure + SSH key create
+PHASE 4  ✅ Project folders create
+PHASE 5  ✅ Terraform files create (6 files)
+PHASE 6  ✅ terraform init → plan → apply
+PHASE 7  ✅ Ansible inventory + playbook → run
+PHASE 8  ✅ EKS connect
+💸 IMPORTANT — Bill Varadha Destroy Pannu!
+cd ~/my-infra/terraform
+terraform destroy -auto-approve
+Enna doubt irundhaalum kelunga Mchi! 🙌
