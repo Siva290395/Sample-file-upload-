@@ -1,0 +1,54 @@
+# 2. ansible.cfg உருவாக்கு
+cat > ansible.cfg << 'EOF'
+[defaults]
+inventory = inventory.ini
+host_key_checking = False
+remote_user = ubuntu
+EOF
+STEP 2: Roles Folder Structure உருவாக்கு
+# Jenkins role
+mkdir -p roles/jenkins/tasks
+
+# Harbor role
+mkdir -p roles/harbor/tasks
+
+# Vault role
+mkdir -p roles/vault/tasks
+
+# SonarQube role
+mkdir -p roles/sonarqube/tasks
+STEP 3: site.yml உருவாக்கு
+cat > site.yml << 'EOF'
+---
+- name: Setup Jenkins Server
+  hosts: jenkins_server
+  become: yes
+  roles:
+    - jenkins
+
+- name: Setup DevOps Tools Server
+  hosts: devops_tools_server
+  become: yes
+  roles:
+    - harbor
+    - vault
+    - sonarqube
+EOF
+STEP 4: Connection Test பண்ணு
+# SSH key correct path-ல இருக்கான்னு check பண்ணு
+ls ~/.ssh/
+
+# Ping test
+ansible all -m ping
+இப்போ உன் Folder இப்படி இருக்கணும்:
+ansible/
+├── inventory.ini   ✅
+├── ansible.cfg     ✅
+├── site.yml        ✅
+└── roles/
+    ├── jenkins/tasks/
+    ├── harbor/tasks/
+    ├── vault/tasks/
+    └── sonarqube/tasks/
+இந்த steps முடிஞ்சதும் screenshot போடு மச்சி - அப்புறம் roles/tasks files எழுதுவோம்! 💪
+⚠️ Key file பேரு என்ன இருக்கு உன்னோட .ssh folder-ல? அது சொல்லு - inventory.ini-ல சரியா update பண்ணலாம்
