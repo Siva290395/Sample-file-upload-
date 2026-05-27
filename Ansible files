@@ -1,4 +1,4 @@
-nano roles/jenkins/tasks/main.yml
+jinano roles/jenkins/tasks/main.yml
 எல்லாம் delete பண்ணி இதை paste பண்ணு:
 ---
 - name: Install Java 17
@@ -48,3 +48,4 @@ nano roles/jenkins/tasks/main.yml
   debug:
     msg: "Jenkins Password: {{ jenkins_pass.stdout }}"
 ansible jenkins_server -i inventory.ini -m shell -a "sudo systemctl status jenkins" -b
+ansible jenkins_server -i inventory.ini -m shell -a "sudo java -version" -b
