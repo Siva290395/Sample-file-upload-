@@ -67,3 +67,6 @@ EOF
 Step 1: Key Permission Fix பண்ணு
 chmod 400 ~/.ssh/my-key-pair.pem
 chmod 400 ~/.ssh/devops-key.pem
+
+
+terraform apply -target=aws_security_group.app_sg -target=aws_instance.jenkins -target=aws_instance.devops_tools -auto-approve
