@@ -1,0 +1,24 @@
+மச்சி - Same Problem! Key Issue இன்னும் இருக்கு! 🎯
+காரணம்:
+AWS-ல இன்னும் பழைய my-key-pair இருக்கு - devops-key import ஆகலை!
+Quick Fix - இதை மட்டும் பண்ணு!
+Step 1: AWS Console - Key Delete & Import
+1. AWS → EC2 → Key Pairs
+2. my-key-pair → Delete பண்ணு
+3. Actions → Import key pair
+   Name: my-key-pair
+   Paste: (கீழே இருக்க key-ஐ paste பண்ணு)
+உன் Public Key (இதை copy பண்ணி paste பண்ணு):
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC23r8xjEcL4oM4Vi8wf7U3XMWo5tB1aKbzjRLhvmr58RzMY6VZhI5JpFBwXb4zafBFV+7aygdEAn+8NamdfH+jZdkfqgChzg0SFMs4i04r1vpHICS8PbTW6UPXVfxpjU+M45VDVLh4Vb2cN9UT0GYXrHg/A+nTzsAhAd6YL04XaFnHldATwOQzVhv90e9hKEsUYAxDX4YQg4A1hsTpL9oWdx0hKY06iXD9QIEz34absfEbqJQtKkdA5jBoxelnsHNPrdR49+xgW1XThmUDYQ1lnvOTkA6ftukImpou8UIKsc+EiD9nqvRCEvB4xkQszXkbRGzmv3feA0MbbhharBFD
+Step 2: Destroy & Apply
+cd ~/my-infra/terraform
+terraform destroy -target=aws_instance.jenkins -target=aws_instance.devops_tools -auto-approve
+
+terraform apply -target=aws_security_group.app_sg -target=aws_instance.jenkins -target=aws_instance.devops_tools -auto-approve
+Step 3: Inventory Update & Ping
+cd ../ansible
+nano inventory.ini
+# புது IPs போடு
+
+ansible all -m ping
+மச்சி - முதல்ல AWS Console-ல Key delete & import பண்ணு! அதுதான் root cause! 🔥
