@@ -23,3 +23,36 @@ nano inventory.ini
 ansible all -m ping
 மச்சி - முதல்ல AWS Console-ல Key delete & import பண்ணு! அதுதான் root cause! 🔥
 echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICLSGe5tEZ3tEe07MI3vYI05sgS7EXbNi5D8EH5yQlJk kiaq-lap-73@kiaq-lap-73" >> ~/.ssh/authorized_keys
+
+
+use பண்ணு:
+# Step 1: புது RSA key create பண்ணு
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/ansible-key -N ""
+
+# Step 2: Public key பாரு
+cat ~/.ssh/ansible-key.pub
+AWS Console-ல:
+EC2 → Key Pairs → Create key pair
+Name: ansible-key
+→ அல்லது Import பண்ணு (ansible-key.pub content paste பண்ணு)
+# Step 3: variables.tf மாத்து
+cd ~/my-infra/terraform
+nano variables.tf
+# key_name = "ansible-key" போடு
+
+# Step 4: Instances recreate
+terraform destroy -target=aws_instance.jenkins -target=aws_instance.devops_tools -auto-approve
+terraform apply -target=aws_security_group.app_sg -target=aws_instance.jenkins -target=aws_instance.devops_tools -auto-approve
+
+# Step 5: inventory update
+cd ../ansible
+cat > inventory.ini << 'EOF'
+[jenkins_server]
+jenkins ansible_host=NEW_IP ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/ansible-key
+
+[devops_tools_server]
+devops ansible_host=NEW_IP ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/ansible-key
+EOF
+
+ansible all -m ping
+மச்சி இதுதான் cleanest solution - ssh-keygen command run பண்ணு! 🎯
