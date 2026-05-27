@@ -21,6 +21,18 @@ nano roles/jenkins/tasks/main.yml
   yum:
     name: jenkins
     state: present
+- name: Set Java Home for Jenkins
+  lineinfile:
+    path: /etc/sysconfig/jenkins
+    regexp: '^JENKINS_JAVA_CMD'
+    line: 'JENKINS_JAVA_CMD=/usr/bin/java'
+    create: yes
+
+- name: Start Jenkins
+  service:
+    name: jenkins
+    state: started
+    enabled: yes
 
 - name: Start Jenkins
   service:
