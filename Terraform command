@@ -150,3 +150,21 @@ terraform apply -auto-approve
 jenkins_ip      = "13.x.x.x"
 devops_tools_ip = "65.x.x.x"
 Done ஆனா IP addresses சொல்லு — Ansible setup போவோம்! 💪
+
+
+aws ec2 create-key-pair \
+  --key-name my-key-pair \
+  --query 'KeyMaterial' \
+  --output text > ~/.ssh/my-key-pair.pem
+Step 2: Permission:
+chmod 400 ~/.ssh/my-key-pair.pem
+Step 3: Verify:
+ls -la ~/.ssh/my-key-pair.pem
+✅ இப்படி வரணும்:
+-r-------- 1 kiaq-lap-73 kiaq-lap-73 1678 my-key-pair.pem
+
+nano ~/my-infra/terraform/variables.tf
+இதை add பண்ணு (கீழே):
+variable "key_name" {
+  default = "my-key-pair"
+}
