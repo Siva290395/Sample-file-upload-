@@ -22,3 +22,4 @@ nano inventory.ini
 
 ansible all -m ping
 மச்சி - முதல்ல AWS Console-ல Key delete & import பண்ணு! அதுதான் root cause! 🔥
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICLSGe5tEZ3tEe07MI3vYI05sgS7EXbNi5D8EH5yQlJk kiaq-lap-73@kiaq-lap-73" >> ~/.ssh/authorized_keys
