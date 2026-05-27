@@ -1,13 +1,17 @@
 nano roles/jenkins/tasks/main.yml
-முழுவதும் மாத்து:
 ---
-- name: Install Java 21
-  shell: |
-    amazon-linux-extras install java-openjdk21 -y || \
-    yum install -y java-21-amazon-corretto
+- name: Remove old Java
+  yum:
+    name: java-17-amazon-corretto-headless
+    state: absent
 
-- name: Verify Java
-  shell: java -version
+- name: Download Java 21 RPM
+  shell: |
+    wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm -O /tmp/java21.rpm
+
+- name: Install Java 21 RPM
+  shell: |
+    yum install -y /tmp/java21.rpm
 
 - name: Add Jenkins Repo
   get_url:
