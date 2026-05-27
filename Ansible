@@ -64,3 +64,6 @@ jenkins ansible_host=54.252.60.108 ansible_user=ubuntu ansible_ssh_private_key_f
 [devops_tools_server]
 devops ansible_host=54.206.64.204 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/my-key-pair.pem
 EOF
+Step 1: Key Permission Fix பண்ணு
+chmod 400 ~/.ssh/my-key-pair.pem
+chmod 400 ~/.ssh/devops-key.pem
