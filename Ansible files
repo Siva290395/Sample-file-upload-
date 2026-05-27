@@ -1,11 +1,13 @@
-jijinano roles/jenkins/tasks/main.yml
-எல்லாம் delete பண்ணி இதை paste பண்ணு:
+nano roles/jenkins/tasks/main.yml
+முழுவதும் மாத்து:
 ---
-- name: Install Java 17
-  yum:
-    name: java-17-amazon-corretto-headless
-    state: present
-    enablerepo: amzn2-core
+- name: Install Java 21
+  shell: |
+    amazon-linux-extras install java-openjdk21 -y || \
+    yum install -y java-21-amazon-corretto
+
+- name: Verify Java
+  shell: java -version
 
 - name: Add Jenkins Repo
   get_url:
@@ -21,33 +23,28 @@ jijinano roles/jenkins/tasks/main.yml
   yum:
     name: jenkins
     state: present
-- name: Set Java Home for Jenkins
-  lineinfile:
-    path: /etc/sysconfig/jenkins
-    regexp: '^JENKINS_JAVA_CMD'
-    line: 'JENKINS_JAVA_CMD=/usr/bin/java'
-    create: yes
+    update_cache: yes
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
 
 - name: Start Jenkins
-  service:
+  systemd:
     name: jenkins
-    state: started
+    state: restarted
     enabled: yes
 
-- name: Start Jenkins
-  service:
-    name: jenkins
-    state: started
-    enabled: yes
+- name: Wait for Jenkins
+  wait_for:
+    port: 8080
+    timeout: 60
 
-- name: Show Jenkins Password
+- name: Get Jenkins Password
   command: cat /var/lib/jenkins/secrets/initialAdminPassword
   register: jenkins_pass
 
 - name: Print Password
   debug:
-    msg: "Jenkins Password: {{ jenkins_pass.stdout }}"
-ansible jenkins_server -i inventory.ini -m shell -a "sudo systemctl status jenkins" -b
-ansible jenkins_server -i inventory.ini -m shell -a "sudo java -version" -b
-ansible jenkins_server -i inventory.ini -m shell -a "sudo sed -i 's|^JAVA_CMD=.*|JAVA_CMD=/usr/bin/java|' /etc/sysconfig/jenkins && sudo systemctl daemon-reload && sudo systemctl restart jenkins" -b
-ansible jenkins_server -i inventory.ini -m shell -a "sudo journalctl -u jenkins -n 20 --no-pager" -b
+    msg: "Jenkins Password = {{ jenkins_pass.stdout }}"
+ansible-playbook -i inventory.ini site.yml --limit jenkins_server
