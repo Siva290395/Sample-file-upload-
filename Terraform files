@@ -1,3 +1,4 @@
+புதுசா variables.tf:
 nano variables.tf
 இதை paste பண்ணு (EC2 இல்லாம):
 variable "aws_region" {
@@ -15,6 +16,9 @@ variable "cluster_name" {
 variable "node_instance_type" {
   default = "t3.medium"
 }
+💾 Save: Ctrl+X → Y → Enter
+Done ஆனா சொல்லு — EC2 இல்லாம main.tf போவோம்!
+
 nano main.tf
 இதை paste பண்ணு:
 terraform {
@@ -176,24 +180,6 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
-nano outputs.tf
-இதை paste பண்ணு:
-output "s3_bucket" {
-  value = aws_s3_bucket.app_bucket.bucket
-}
-
-output "cloudfront_url" {
-  value = aws_cloudfront_distribution.cdn.domain_name
-}
-
-output "eks_endpoint" {
-  value = aws_eks_cluster.main.endpoint
-}
-
-output "eks_cluster_name" {
-  value = aws_eks_cluster.main.name
-}
-
   restrictions {
     geo_restriction { restriction_type = "none" }
   }
@@ -206,5 +192,4 @@ output "eks_cluster_name" {
     Name = "App-CDN"
   }
 }
-
 
