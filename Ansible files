@@ -50,3 +50,4 @@ jijinano roles/jenkins/tasks/main.yml
 ansible jenkins_server -i inventory.ini -m shell -a "sudo systemctl status jenkins" -b
 ansible jenkins_server -i inventory.ini -m shell -a "sudo java -version" -b
 ansible jenkins_server -i inventory.ini -m shell -a "sudo sed -i 's|^JAVA_CMD=.*|JAVA_CMD=/usr/bin/java|' /etc/sysconfig/jenkins && sudo systemctl daemon-reload && sudo systemctl restart jenkins" -b
+ansible jenkins_server -i inventory.ini -m shell -a "sudo journalctl -u jenkins -n 20 --no-pager" -b
