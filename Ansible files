@@ -52,3 +52,150 @@ nano roles/jenkins/tasks/main.yml
   debug:
     msg: "Jenkins Password = {{ jenkins_pass.stdout }}"
 ansible-playbook -i inventory.ini site.yml --limit jenkins_server
+
+
+Harbor Role எழுது!
+nano roles/harbor/tasks/main.yml
+---
+- name: Install Docker
+  shell: |
+    amazon-linux-extras install docker -y
+
+- name: Start Docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Install Docker Compose
+  shell: |
+    curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+
+- name: Download Harbor
+  get_url:
+    url: https://github.com/goharbor/harbor/releases/download/v2.10.0/harbor-online-installer-v2.10.0.tgz
+    dest: /opt/harbor-installer.tgz
+
+- name: Extract Harbor
+  unarchive:
+    src: /opt/harbor-installer.tgz
+    dest: /opt/
+    remote_src: yes
+
+- name: Configure Harbor
+  shell: |
+    cd /opt/harbor
+    cp harbor.yml.tmpl harbor.yml
+    sed -i 's/hostname: reg.mydomain.com/hostname: 13.239.242.186/' harbor.yml
+    sed -i 's/  port: 443/#  port: 443/' harbor.yml
+    sed -i '/https:/,/private_key:/s/^/#/' harbor.yml
+
+- name: Install Harbor
+  shell: |
+    cd /opt/harbor
+    ./install.sh
+Vault Role எழுது!
+nano roles/vault/tasks/main.yml
+---
+- name: Install Vault
+  shell: |
+    yum install -y yum-utils
+    yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+    yum install -y vault
+
+- name: Create Vault Config
+  copy:
+    dest: /etc/vault.d/vault.hcl
+    content: |
+      ui = true
+      storage "file" {
+        path = "/opt/vault/data"
+      }
+      listener "tcp" {
+        address     = "0.0.0.0:8200"
+        tls_disable = 1
+      }
+
+- name: Create Vault Data Dir
+  file:
+    path: /opt/vault/data
+    state: directory
+    owner: vault
+    group: vault
+
+- name: Start Vault
+  service:
+    name: vault
+    state: started
+    enabled: yes
+SonarQube Role எழுது!
+nano roles/sonarqube/tasks/main.yml
+---
+- name: Install Java 21 for SonarQube
+  shell: |
+    wget https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.rpm -O /tmp/java21.rpm
+    yum install -y /tmp/java21.rpm
+
+- name: Set vm.max_map_count
+  sysctl:
+    name: vm.max_map_count
+    value: "524288"
+    permanent: yes
+    state: present
+
+- name: Download SonarQube
+  get_url:
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.4.1.88267.zip
+    dest: /opt/sonarqube.zip
+
+- name: Install unzip
+  yum:
+    name: unzip
+    state: present
+
+- name: Extract SonarQube
+  unarchive:
+    src: /opt/sonarqube.zip
+    dest: /opt/
+    remote_src: yes
+
+- name: Create SonarQube User
+  user:
+    name: sonarqube
+    system: yes
+
+- name: Set Permissions
+  file:
+    path: /opt/sonarqube-10.4.1.88267
+    owner: sonarqube
+    group: sonarqube
+    recurse: yes
+
+- name: Create Systemd Service
+  copy:
+    dest: /etc/systemd/system/sonarqube.service
+    content: |
+      [Unit]
+      Description=SonarQube
+      After=network.target
+
+      [Service]
+      Type=forking
+      User=sonarqube
+      ExecStart=/opt/sonarqube-10.4.1.88267/bin/linux-x86-64/sonar.sh start
+      ExecStop=/opt/sonarqube-10.4.1.88267/bin/linux-x86-64/sonar.sh stop
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Start SonarQube
+  systemd:
+    name: sonarqube
+    state: started
+    enabled: yes
+    daemon_reload: yes
+Run பண்ணு!
+ansible-playbook -i inventory.ini site.yml --limit devops_tools_server
+மச்சி run பண்ணு - screenshot போடு! 🚀
