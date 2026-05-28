@@ -137,3 +137,15 @@ EOF
 ansible devops_tools_server -i inventory.ini -m shell -a "sudo systemctl status sonarqube" -b
 Log பாரு:
 ansible devops_tools_server -i inventory.ini -m shell -a "sudo cat /opt/sonarqube-10.4.1.88267/logs/sonar.log | tail -30" -b
+
+
+
+ansible devops_tools_server -i inventory.ini -m shell -a "
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096 &&
+sudo chmod 600 /swapfile &&
+sudo mkswap /swapfile &&
+sudo swapon /swapfile &&
+echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab &&
+sudo systemctl restart sonarqube &&
+free -m
+" -b
