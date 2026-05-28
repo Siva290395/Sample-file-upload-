@@ -149,3 +149,17 @@ echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab &&
 sudo systemctl restart sonarqube &&
 free -m
 " -b
+
+
+
+ansible devops_tools_server -i inventory.ini -m shell -a "
+sudo bash -c 'cat >> /opt/sonarqube-10.4.1.88267/conf/sonar.properties << EOF
+sonar.web.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+sonar.search.javaOpts=-Xmx256m -Xms256m -XX:+HeapDumpOnOutOfMemoryError
+sonar.ce.javaOpts=-Xmx256m -Xms64m -XX:+HeapDumpOnOutOfMemoryError
+EOF'
+sudo systemctl restart sonarqube
+" -b
+5 நிமிஷம் Wait பண்ணி:
+ansible devops_tools_server -i inventory.ini -m shell -a "sudo cat /opt/sonarqube-10.4.1.88267/logs/sonar.log | grep -E 'ERROR|started|stopped|running' | tail -10" -b
+மச்சி run பண்ணு - memory limit குறைச்சோம் இப்போ work ஆகணும்! 🔥
