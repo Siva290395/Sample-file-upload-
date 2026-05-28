@@ -170,3 +170,49 @@ terraform apply \
   -target=aws_s3_bucket_policy.policy \
   -target=aws_cloudfront_distribution.cdn \
   -auto-approve
+
+
+nano roles/jenkins/tasks/main.yml
+கீழே இதை add பண்ணு:
+- name: Install Git
+  yum:
+    name: git
+    state: present
+
+- name: Install NodeJS 20
+  shell: |
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+    yum install -y nodejs
+
+- name: Verify Node & NPM
+  shell: |
+    node -v
+    npm -v
+
+- name: Install AWS CLI
+  shell: |
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    unzip -o /tmp/awscliv2.zip -d /tmp
+    sudo /tmp/aws/install --update
+
+- name: Install Docker
+  shell: |
+    amazon-linux-extras install docker -y
+
+- name: Start Docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add Jenkins to Docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
+
+- name: Install SonarQube Scanner
+  shell: |
+    wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip -O /tmp/sonar-scanner.zip
+    unzip -o /tmp/sonar-scanner.zip -d /opt/
+    ln -sf /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
