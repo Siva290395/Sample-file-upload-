@@ -255,3 +255,9 @@ ansible-playbook -i inventory.ini site.yml --limit devops_tools_server
     path: /var/log/harbor
     state: directory
     mode: '0755'
+- name: Set fs.file-max
+  sysctl:
+    name: fs.file-max
+    value: "131072"
+    state: present
+    reload: yes
