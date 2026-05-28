@@ -163,3 +163,10 @@ sudo systemctl restart sonarqube
 5 நிமிஷம் Wait பண்ணி:
 ansible devops_tools_server -i inventory.ini -m shell -a "sudo cat /opt/sonarqube-10.4.1.88267/logs/sonar.log | grep -E 'ERROR|started|stopped|running' | tail -10" -b
 மச்சி run பண்ணு - memory limit குறைச்சோம் இப்போ work ஆகணும்! 🔥
+
+
+terraform apply \
+  -target=aws_s3_bucket.app_bucket \
+  -target=aws_s3_bucket_policy.policy \
+  -target=aws_cloudfront_distribution.cdn \
+  -auto-approve
