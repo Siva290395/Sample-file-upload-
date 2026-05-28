@@ -250,3 +250,8 @@ ansible-playbook -i inventory.ini site.yml --limit devops_tools_server
     PATH: "/usr/local/bin:/usr/bin:/bin"
   async: 600
   poll: 30
+- name: Create Harbor Log Directory
+  file:
+    path: /var/log/harbor
+    state: directory
+    mode: '0755'
