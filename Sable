@@ -19,3 +19,23 @@ git rm -r --cached .
 git add .
 git commit -m "Add gitignore - remove large files"
 git push -u origin main
+
+
+mkdir ~/my-infra-clean
+cd ~/my-infra-clean
+
+# Files copy பண்ணு (.terraform தவிர)
+cp -r ~/my-infra/ansible .
+cp -r ~/my-infra/terraform/ec2.tf terraform/
+cp -r ~/my-infra/terraform/main.tf terraform/
+cp -r ~/my-infra/terraform/variables.tf terraform/
+cp -r ~/my-infra/terraform/outputs.tf terraform/
+cp -r ~/my-infra/terraform/s3.tf terraform/
+cp -r ~/my-infra/terraform/cloudfront.tf terraform/
+
+# Git init & push
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/Siva290395/terraform.git
+git push -u origin main --force
