@@ -39,3 +39,14 @@ git add .
 git commit -m "Initial commit"
 git remote add origin https://github.com/Siva290395/terraform.git
 git push -u origin main --force
+
+
+
+
+cp ~/my-infra/terraform/ec2.tf .
+cp ~/my-infra/terraform/main.tf .
+cp ~/my-infra/terraform/variables.tf .
+cp ~/my-infra/terraform/outputs.tf .
+cp ~/my-infra/terraform/s3.tf .
+cp ~/my-infra/terraform/cloudfront.tf .
+cp ~/my-infra/terraform/eks.tf .
