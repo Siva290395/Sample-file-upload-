@@ -1,0 +1,21 @@
+cd ~/my-infra
+
+cat > .gitignore << 'EOF'
+# Terraform providers - large files
+.terraform/
+terraform/.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Sensitive files
+*.pem
+*.key
+EOF
+
+
+
+git rm -r --cached .
+git add .
+git commit -m "Add gitignore - remove large files"
+git push -u origin main
