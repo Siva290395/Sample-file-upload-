@@ -32,7 +32,7 @@ cp -r ~/my-infra/terraform/variables.tf terraform/
 cp -r ~/my-infra/terraform/outputs.tf terraform/
 cp -r ~/my-infra/terraform/s3.tf terraform/
 cp -r ~/my-infra/terraform/cloudfront.tf terraform/
-
+cp -r ~/my-infra/terraform/eks.tf terraform/
 # Git init & push
 git init
 git add .
