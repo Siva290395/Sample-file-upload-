@@ -306,3 +306,7 @@ cat > roles/jenkins/tasks/main.yml << 'EOF'
     unzip -o /tmp/sonar-scanner.zip -d /opt/
     ln -sf /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
 EOF
+
+
+
+R0r$lTVNhM!ChJQB
