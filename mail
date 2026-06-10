@@ -27,3 +27,7 @@ grep "API_PORT\|API_URL" src/services/api.ts
 cd /home/kiaq-lap-73/personal-finance-app
 
 nano src/main/java/com/financetracker/config/SecurityConfig.java
+
+cd /home/kiaq-lap-73/personal-finance-app
+
+sed -i 's/.csrf(AbstractHttpConfigurer::disable)/.cors(cors -> cors.configurationSource(corsConfigurationSource()))\n\t\t\t.csrf(AbstractHttpConfigurer::disable)/' src/main/java/com/financetracker/config/SecurityConfig.java
