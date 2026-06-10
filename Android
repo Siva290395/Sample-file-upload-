@@ -1,87 +1,24 @@
-pipeline {
-    agent any
-    
-    environment {
-        ANDROID_HOME = '/usr/lib/android-sdk'
-        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
-        PATH = "/usr/bin:/usr/local/bin:/usr/sbin:/usr/local/sbin:/sbin:/bin:${env.PATH}"
-        S3_BUCKET = 'personal-finance-mobile'
-        APK_PATH = 'android/app/build/outputs/apk/debug/app-debug.apk'
-    }
-
-    stages {
-        stage('1. Checkout'){
-            steps{
-                git branch: 'main', 
-                    credentialsId: 'github-credentials', 
-                    url: 'https://github.com/Siva290395/personal-finance-mobile.git'
-            }
-        }
-
-        stage('2. npm install'){
-            steps{
-                sh '''
-                    export PATH=/usr/bin:/usr/local/bin:$PATH
-                    npm install
-                '''
-            }
-        }
-
-        stage('3. prebuild'){
-            steps{
-                sh '''
-                    export PATH=/usr/bin:/usr/local/bin:$PATH
-                    export ANDROID_HOME=/usr/lib/android-sdk
-                    rm -rf android
-                    npx expo prebuild --platform android --clean
-                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
-                    echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> android/gradle.properties
-                '''
-            }
-        }
-
-        stage('4. build apk file'){
-            steps{
-                sh '''
-                    export PATH=/usr/bin:/usr/local/bin:$PATH
-                    export ANDROID_HOME=/usr/lib/android-sdk
-                    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
-                    cd android
-                    chmod +x gradlew
-                    ./gradlew assembleDebug
-                '''
-            }
-        }
-
-        stage('5. Upload APK to S3'){
-            steps{
-                sh """
-                    export PATH=/usr/bin:/usr/local/bin:$PATH
-                    
-                    # Build number tho upload
-                    aws s3 cp ${APK_PATH} \
-                        s3://${S3_BUCKET}/releases/personal-finance-mobile-${BUILD_NUMBER}.apk \
-                        --region ap-south-1
-                    
-                    # Latest ga also upload
-                    aws s3 cp ${APK_PATH} \
-                        s3://${S3_BUCKET}/latest/personal-finance-mobile-latest.apk \
-                        --region ap-south-1
-                    
-                    echo "✅ APK uploaded to S3!"
-                    echo "URL: https://${S3_BUCKET}.s3.amazonaws.com/releases/personal-finance-mobile-${BUILD_NUMBER}.apk"
-                """
-            }
-        }
-    }
-
-    post {
-        success {
-            echo '🎉 Pipeline Success! APK in S3!'
-        }
-        failure {
-            echo '❌ Pipeline Failed! Check logs!'
-        }
-    }
-}
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <uses-permission android:name="android.permission.VIBRATE"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.VIEW"/>
+      <category android:name="android.intent.category.BROWSABLE"/>
+      <data android:scheme="https"/>
+    </intent>
+  </queries>
+  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="true" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false">
+    <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+  </application>
