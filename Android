@@ -35,7 +35,16 @@ pipeline{
   stages{
     stage('1.Checkout'){
       steps{
-        git branch: 'Native-dev', credentialsId: 'github-cred', url: 'https://github.com/Locate360-Repo/Locate360-User-app.git'
+        withCredentials([usernamePassword(
+          credentialsId: 'github-cred',
+          usernameVariable: 'GIT_USER',
+          passwordVariable: 'GIT_PASS'
+        )]) {
+          sh '''
+            git clone -b Native-dev https://$GIT_USER:$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git .
+            git checkout Sivakumar
+          '''
+        }
       }
     }
 
