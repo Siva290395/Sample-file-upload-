@@ -12,3 +12,7 @@ docker compose up --build -d
 curl -X POST http://localhost:9091/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@test.com","password":"Test@123","name":"Test User"}'
+
+cd /home/kiaq-lap-73/personal-finance-mobile
+
+grep -r "localhost\|API_URL\|baseURL\|8080\|9091" src/ app/ constants/ --include="*.ts" --include="*.tsx" --include="*.js" 2>/dev/null
