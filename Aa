@@ -3,41 +3,32 @@ pipeline {
 
     environment {
         ANDROID_HOME = "/home/kiaq-lap-73/android-sdk"
-        JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
-        PATH = "${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/36.0.0:${JAVA_HOME}/bin:${env.PATH}"
+        JAVA_HOME    = "/usr/lib/jvm/java-17-openjdk-amd64"
+        PATH         = "${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/36.0.0:${JAVA_HOME}/bin:${env.PATH}"
 
-        APP_NAME = "Locate360-User-app"
-        PROJECT_DIR = "/home/kiaq-lap-73/Locate360-User-app"
-        OUTPUT_DIR = "/home/kiaq-lap-73/locate360-builds"
+        APP_NAME    = "Locate360-User-app"
+        PROJECT_DIR = "${WORKSPACE}"
+        OUTPUT_DIR  = "${WORKSPACE}/locate360-builds"
 
-        AWS_REGION = "us-east-1"
-        S3_BUCKET = "locate360-apk-storage"
+        AWS_REGION  = "us-east-1"
+        S3_BUCKET   = "locate360-apk-storage"
     }
 
     stages {
 
-        stage('1. Checkout') {
+        stage('1. Pre-Clean, Clone & Checkout') {
             steps {
-                echo '📥 Cloning Locate360-User-app repo...'
+                echo '📥 Cleaning workspace and cloning repo...'
+                cleanWs()
                 withCredentials([usernamePassword(
                     credentialsId: 'github-cred',
                     usernameVariable: 'GIT_USER',
                     passwordVariable: 'GIT_PASS'
                 )]) {
-                    sh """
-                        git config --global --add safe.directory ${PROJECT_DIR} || true
-                        if [ -d "${PROJECT_DIR}/.git" ]; then
-                            cd ${PROJECT_DIR}
-                            git remote set-url origin https://\$GIT_USER:\$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git
-                            git fetch origin
-                            git checkout Sivakumar
-                            git pull origin Sivakumar
-                        else
-                            git clone -b Native-dev https://\$GIT_USER:\$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
-                            cd ${PROJECT_DIR}
-                            git checkout Sivakumar
-                        fi
-                    """
+                    sh '''
+                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
+                        git checkout Sivakumar
+                    '''
                 }
             }
         }
@@ -69,9 +60,10 @@ pipeline {
             steps {
                 echo '🔑 Generating debug keystore if missing...'
                 sh '''
-                    if [ ! -f ${PROJECT_DIR}/android/app/debug.keystore ]; then
+                    cd ${PROJECT_DIR}
+                    if [ ! -f android/app/debug.keystore ]; then
                         keytool -genkey -v \
-                            -keystore ${PROJECT_DIR}/android/app/debug.keystore \
+                            -keystore android/app/debug.keystore \
                             -storepass android \
                             -alias androiddebugkey \
                             -keypass android \
@@ -147,9 +139,7 @@ pipeline {
         success {
             echo """
 🎉 BUILD SUCCESS!
-
 APK: ${OUTPUT_DIR}/Locate360-User-app.apk
-
 S3: s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
 """
         }
