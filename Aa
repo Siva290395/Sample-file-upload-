@@ -2,65 +2,110 @@ pipeline {
     agent any
 
     environment {
-        ANDROID_HOME = "/home/kiaq-lap-73/android-sdk"
+        PROJECT_DIR  = "${WORKSPACE}"
+        OUTPUT_DIR   = "${WORKSPACE}/outputs"
+        S3_BUCKET    = "your-s3-bucket-name"
+        AWS_REGION   = "ap-south-1"
+        ANDROID_HOME = "/opt/android-sdk"
         JAVA_HOME    = "/usr/lib/jvm/java-17-openjdk-amd64"
-        PATH         = "${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/36.0.0:${JAVA_HOME}/bin:${env.PATH}"
-
-        APP_NAME    = "Locate360-User-app"
-        PROJECT_DIR = "${WORKSPACE}"
-        OUTPUT_DIR  = "${WORKSPACE}/locate360-builds"
-
-        AWS_REGION  = "us-east-1"
-        S3_BUCKET   = "locate360-apk-storage"
+        PATH         = "${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${JAVA_HOME}/bin:${PATH}"
     }
 
     stages {
 
+        // ─────────────────────────────────────────
+        // Stage 1: Pre-Clean, Clone & Checkout
+        // ─────────────────────────────────────────
         stage('1. Pre-Clean, Clone & Checkout') {
             steps {
-                echo '📥 Cleaning workspace and cloning repo...'
+                echo '🧹 Cleaning workspace and cloning repo...'
                 cleanWs()
                 withCredentials([usernamePassword(
-                    credentialsId: 'github-cred',
+                    credentialsId: 'github-credentials',
                     usernameVariable: 'GIT_USER',
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
-                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
+                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/YOUR_ORG/YOUR_REPO.git .
                         git checkout Sivakumar
+                        echo "✅ Branch: $(git branch --show-current)"
+                        echo "✅ Latest commit: $(git log --oneline -1)"
                     '''
                 }
             }
         }
 
+        // ─────────────────────────────────────────
+        // Stage 2: Setup Environment
+        // ─────────────────────────────────────────
         stage('2. Setup Environment') {
             steps {
-                echo '⚙️ Verifying Java and Android SDK...'
+                echo '⚙️ Verifying Java, Node and Android SDK...'
                 sh '''
+                    echo "--- Java Version ---"
                     java -version
+
+                    echo "--- Node Version ---"
+                    node -v
+
+                    echo "--- NPM Version ---"
+                    npm -v
+
+                    echo "--- JAVA_HOME ---"
                     echo "JAVA_HOME=$JAVA_HOME"
+
+                    echo "--- ANDROID_HOME ---"
                     echo "ANDROID_HOME=$ANDROID_HOME"
+
                     sdkmanager --licenses < /dev/null || true
                     aws --version || true
                 '''
             }
         }
 
+        // ─────────────────────────────────────────
+        // Stage 3: Install Node Dependencies
+        // ─────────────────────────────────────────
         stage('3. Install Dependencies') {
             steps {
                 echo '📦 Installing Node dependencies...'
                 sh '''
                     cd ${PROJECT_DIR}
+
+                    # package.json இருக்கா check பண்ணு
+                    if [ ! -f package.json ]; then
+                        echo "❌ package.json not found!"
+                        ls -la
+                        exit 1
+                    fi
+
+                    # npm install
                     npm install --legacy-peer-deps
+
+                    echo "✅ npm install done"
+
+                    # Expo project-ஆ இருந்தா
+                    if grep -q '"expo"' package.json; then
+                        echo "📱 Expo project detected - running npx expo install"
+                        npx expo install
+                        echo "✅ npx expo install done"
+                    else
+                        echo "📱 Pure React Native project detected"
+                    fi
                 '''
             }
         }
 
+        // ─────────────────────────────────────────
+        // Stage 4: Setup Debug Keystore
+        // ─────────────────────────────────────────
         stage('4. Setup Debug Keystore') {
             steps {
                 echo '🔑 Generating debug keystore if missing...'
                 sh '''
                     cd ${PROJECT_DIR}
+                    mkdir -p android/app
+
                     if [ ! -f android/app/debug.keystore ]; then
                         keytool -genkey -v \
                             -keystore android/app/debug.keystore \
@@ -79,75 +124,145 @@ pipeline {
             }
         }
 
-        stage('5. Clean Build') {
+        // ─────────────────────────────────────────
+        // Stage 5: Generate Android Files (Expo only)
+        // ─────────────────────────────────────────
+        stage('5. Generate Android Folder') {
+            steps {
+                echo '📂 Generating android folder if missing (Expo)...'
+                sh '''
+                    cd ${PROJECT_DIR}
+
+                    if grep -q '"expo"' package.json; then
+                        # Expo project - android folder generate பண்ணு
+                        if [ ! -d android ]; then
+                            echo "android folder இல்ல - npx expo prebuild run பண்றோம்"
+                            npx expo prebuild --platform android --clean
+                            echo "✅ android folder generated"
+                        else
+                            echo "✅ android folder already exists"
+                        fi
+                    else
+                        echo "✅ React Native project - android folder already present"
+                    fi
+
+                    # gradlew இருக்கா verify பண்ணு
+                    if [ ! -f android/gradlew ]; then
+                        echo "❌ gradlew not found in android folder!"
+                        ls -la android/
+                        exit 1
+                    fi
+
+                    echo "✅ gradlew found"
+                    chmod +x android/gradlew
+                '''
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // Stage 6: Clean Build
+        // ─────────────────────────────────────────
+        stage('6. Clean Build') {
             steps {
                 echo '🧹 Cleaning build...'
                 sh '''
                     cd ${PROJECT_DIR}/android
                     chmod +x gradlew
                     ./gradlew clean
+                    echo "✅ Clean done"
                 '''
             }
         }
 
-        stage('6. Build APK') {
+        // ─────────────────────────────────────────
+        // Stage 7: Build APK
+        // ─────────────────────────────────────────
+        stage('7. Build APK') {
             steps {
                 echo '🏗️ Building Release APK...'
                 sh '''
                     cd ${PROJECT_DIR}/android
+                    chmod +x gradlew
+
+                    # Release APK build
                     ./gradlew assembleRelease
+
+                    echo "✅ APK build done"
+
+                    # APK இருக்கா verify பண்ணு
+                    if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+                        echo "✅ APK found:"
+                        ls -lh app/build/outputs/apk/release/
+                    else
+                        echo "❌ APK not found!"
+                        exit 1
+                    fi
                 '''
             }
         }
 
-        stage('7. Copy Output Files') {
+        // ─────────────────────────────────────────
+        // Stage 8: Copy Output Files
+        // ─────────────────────────────────────────
+        stage('8. Copy Output Files') {
             steps {
                 echo '📁 Copying outputs...'
                 sh '''
                     mkdir -p ${OUTPUT_DIR}
                     cp ${PROJECT_DIR}/android/app/build/outputs/apk/release/app-release.apk \
                        ${OUTPUT_DIR}/Locate360-User-app.apk
+                    echo "✅ APK copied"
                     ls -lh ${OUTPUT_DIR}
                 '''
             }
         }
 
-        stage('8. Upload to S3') {
+        // ─────────────────────────────────────────
+        // Stage 9: Upload to S3
+        // ─────────────────────────────────────────
+        stage('9. Upload to S3') {
             steps {
                 echo '☁️ Uploading APK to S3...'
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-cred'
+                    credentialsId: 'aws-credentials'
                 ]]) {
                     sh '''
+                        # Build number version upload
                         aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
-                        s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
-                        --region ${AWS_REGION}
+                            s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
+                            --region ${AWS_REGION}
 
+                        # Latest version upload
                         aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
-                        s3://${S3_BUCKET}/latest/Locate360-latest.apk \
-                        --region ${AWS_REGION}
+                            s3://${S3_BUCKET}/latest/Locate360-latest.apk \
+                            --region ${AWS_REGION}
 
                         echo "✅ Uploaded to S3 successfully"
                     '''
                 }
             }
         }
-    }
 
+    } // end stages
+
+    // ─────────────────────────────────────────
+    // Post Actions
+    // ─────────────────────────────────────────
     post {
         success {
             echo """
 🎉 BUILD SUCCESS!
-APK: ${OUTPUT_DIR}/Locate360-User-app.apk
-S3: s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
+APK : ${OUTPUT_DIR}/Locate360-User-app.apk
+S3  : s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
 """
         }
         failure {
             echo '❌ BUILD FAILED - Check Jenkins console logs.'
         }
         always {
-            echo '📋 Pipeline completed.'
+            echo '🏁 Pipeline completed.'
         }
     }
 }
+
