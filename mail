@@ -33,3 +33,23 @@ cd /home/kiaq-lap-73/personal-finance-app
 sed -i 's/.csrf(AbstractHttpConfigurer::disable)/.cors(cors -> cors.configurationSource(corsConfigurationSource()))\n\t\t\t.csrf(AbstractHttpConfigurer::disable)/' src/main/java/com/financetracker/config/SecurityConfig.java
 
 grep -A2 "cors\|csrf" src/main/java/com/financetracker/config/SecurityConfig.java
+
+
+environment {
+    S3_BUCKET = 'personal-finance-mobile'
+    APK_PATH = 'android/app/build/outputs/apk/release/app-release.apk'
+    ANDROID_HOME = '/usr/lib/android-sdk'
+    JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+}
+stage('4. build apk file'){
+    steps{
+        sh '''
+            echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+            echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> android/gradle.properties
+            cd android &&
+            chmod +x gradlew
+            ./gradlew assembleRelease
+        '''
+    }
+}
+
