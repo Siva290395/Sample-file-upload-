@@ -53,3 +53,62 @@ stage('4. build apk file'){
     }
 }
 
+
+pipeline {
+    agent any
+    
+    environment {
+        S3_BUCKET = 'personal-finance-mobile'
+        APK_PATH = 'android/app/build/outputs/apk/release/app-release.apk'
+        ANDROID_HOME = '/usr/lib/android-sdk'
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+        PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"
+    }
+
+    stages {
+        stage('1.Checkout'){
+            steps{
+                git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/...'
+            }
+        }
+
+        stage('2. npm install'){
+            steps{
+                sh "npm install"
+            }
+        }
+
+        stage('3. prebuild'){
+            steps{
+                sh '''
+                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+                    npx expo prebuild --platform android --clean
+                '''
+            }
+        }
+
+        stage('4. build apk file'){
+            steps{
+                sh '''
+                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+                    echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> android/gradle.properties
+                    cd android
+                    chmod +x gradlew
+                    ./gradlew assembleRelease
+                '''
+            }
+        }
+
+        stage('5. Upload APK to S3') {
+            steps {
+                sh """
+                    aws s3 cp ${APK_PATH} \
+                    s3://${S3_BUCKET}/releases/personal-finance-mobile-${BUILD_NUMBER}.apk
+
+                    aws s3 cp ${APK_PATH} \
+                    s3://${S3_BUCKET}/latest/personal-finance-mobile-latest.apk
+                """
+            }
+        }
+    }
+}
