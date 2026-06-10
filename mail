@@ -7,3 +7,8 @@ head -20 src/main/java/com/financetracker/config/SecurityConfig.java
 # Imports theriyanum ✅
 
 docker compose up --build -d
+
+# First register pannunga
+curl -X POST http://localhost:9091/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"Test@123","name":"Test User"}'
