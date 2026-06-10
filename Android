@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+    
+    environment {
+        ANDROID_HOME = '/usr/lib/android-sdk'
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+        PATH = "/usr/bin:/usr/local/bin:/usr/sbin:/usr/local/sbin:/sbin:/bin:${env.PATH}"
+        S3_BUCKET = 'personal-finance-mobile'
+        APK_PATH = 'android/app/build/outputs/apk/debug/app-debug.apk'
+    }
+
+    stages {
+        stage('1. Checkout'){
+            steps{
+                git branch: 'main', 
+                    credentialsId: 'github-credentials', 
+                    url: 'https://github.com/Siva290395/personal-finance-mobile.git'
+            }
+        }
+
+        stage('2. npm install'){
+            steps{
+                sh '''
+                    export PATH=/usr/bin:/usr/local/bin:$PATH
+                    npm install
+                '''
+            }
+        }
+
+        stage('3. prebuild'){
+            steps{
+                sh '''
+                    export PATH=/usr/bin:/usr/local/bin:$PATH
+                    export ANDROID_HOME=/usr/lib/android-sdk
+                    rm -rf android
+                    npx expo prebuild --platform android --clean
+                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+                    echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> android/gradle.properties
+                '''
+            }
+        }
+
+        stage('4. build apk file'){
+            steps{
+                sh '''
+                    export PATH=/usr/bin:/usr/local/bin:$PATH
+                    export ANDROID_HOME=/usr/lib/android-sdk
+                    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+                    cd android
+                    chmod +x gradlew
+                    ./gradlew assembleDebug
+                '''
+            }
+        }
+
+        stage('5. Upload APK to S3'){
+            steps{
+                sh """
+                    export PATH=/usr/bin:/usr/local/bin:$PATH
+                    
+                    # Build number tho upload
+                    aws s3 cp ${APK_PATH} \
+                        s3://${S3_BUCKET}/releases/personal-finance-mobile-${BUILD_NUMBER}.apk \
+                        --region ap-south-1
+                    
+                    # Latest ga also upload
+                    aws s3 cp ${APK_PATH} \
+                        s3://${S3_BUCKET}/latest/personal-finance-mobile-latest.apk \
+                        --region ap-south-1
+                    
+                    echo "✅ APK uploaded to S3!"
+                    echo "URL: https://${S3_BUCKET}.s3.amazonaws.com/releases/personal-finance-mobile-${BUILD_NUMBER}.apk"
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '🎉 Pipeline Success! APK in S3!'
+        }
+        failure {
+            echo '❌ Pipeline Failed! Check logs!'
+        }
+    }
+}
