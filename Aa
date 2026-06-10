@@ -19,12 +19,13 @@ pipeline {
         stage('1. Checkout') {
             steps {
                 echo '📥 Cloning Locate360-User-app repo...'
-                withCredentials([string(
+                withCredentials([usernamePassword(
                     credentialsId: 'github-cred',
-                    variable: 'GIT_TOKEN'
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
-                        git clone -b Native-dev https://$GIT_TOKEN@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
+                        git clone -b Native-dev https://$GIT_USER:$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
                         cd ${PROJECT_DIR}
                         git checkout Sivakumar
                     '''
@@ -128,13 +129,11 @@ pipeline {
                     credentialsId: 'aws-cred'
                 ]]) {
                     sh '''
-                        aws s3 cp \
-                        ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
                         s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
                         --region ${AWS_REGION}
 
-                        aws s3 cp \
-                        ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
                         s3://${S3_BUCKET}/latest/Locate360-latest.apk \
                         --region ${AWS_REGION}
 
@@ -147,13 +146,7 @@ pipeline {
 
     post {
         success {
-            echo """
-🎉 BUILD SUCCESS!
-
-APK: ${OUTPUT_DIR}/Locate360-User-app.apk
-
-S3: s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
-"""
+            echo '🎉 BUILD SUCCESS! APK S3-la upload ஆச்சு!'
         }
         failure {
             echo '❌ BUILD FAILED - Check Jenkins console logs.'
