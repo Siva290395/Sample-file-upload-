@@ -1,1 +1,9 @@
+cd /home/kiaq-lap-73/personal-finance-app
 
+# File top la imports add pannunga
+sed -i '/^import org.springframework.security/i import org.springframework.web.cors.CorsConfiguration;\nimport org.springframework.web.cors.CorsConfigurationSource;\nimport org.springframework.web.cors.UrlBasedCorsConfigurationSource;\nimport java.util.List;' src/main/java/com/financetracker/config/SecurityConfig.java
+
+head -20 src/main/java/com/financetracker/config/SecurityConfig.java
+# Imports theriyanum ✅
+
+docker compose up --build -d
