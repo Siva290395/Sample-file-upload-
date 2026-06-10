@@ -26,8 +26,9 @@ pipeline {
                 )]) {
                     sh """
                         git config --global --add safe.directory ${PROJECT_DIR} || true
-                        if [ -d "${PROJECT_DIR}" ]; then
+                        if [ -d "${PROJECT_DIR}/.git" ]; then
                             cd ${PROJECT_DIR}
+                            git remote set-url origin https://\$GIT_USER:\$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git
                             git fetch origin
                             git checkout Sivakumar
                             git pull origin Sivakumar
@@ -64,17 +65,7 @@ pipeline {
             }
         }
 
-        stage('4. Expo Prebuild') {
-            steps {
-                echo '🔧 Running Expo Prebuild...'
-                sh '''
-                    cd ${PROJECT_DIR}
-                    npx expo prebuild --clean
-                '''
-            }
-        }
-
-        stage('5. Setup Debug Keystore') {
+        stage('4. Setup Debug Keystore') {
             steps {
                 echo '🔑 Generating debug keystore if missing...'
                 sh '''
@@ -96,7 +87,7 @@ pipeline {
             }
         }
 
-        stage('6. Clean Build') {
+        stage('5. Clean Build') {
             steps {
                 echo '🧹 Cleaning build...'
                 sh '''
@@ -107,7 +98,7 @@ pipeline {
             }
         }
 
-        stage('7. Build APK') {
+        stage('6. Build APK') {
             steps {
                 echo '🏗️ Building Release APK...'
                 sh '''
@@ -117,7 +108,7 @@ pipeline {
             }
         }
 
-        stage('8. Copy Output Files') {
+        stage('7. Copy Output Files') {
             steps {
                 echo '📁 Copying outputs...'
                 sh '''
@@ -129,7 +120,7 @@ pipeline {
             }
         }
 
-        stage('9. Upload to S3') {
+        stage('8. Upload to S3') {
             steps {
                 echo '☁️ Uploading APK to S3...'
                 withCredentials([[
