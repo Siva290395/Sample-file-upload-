@@ -16,3 +16,10 @@ curl -X POST http://localhost:9091/api/auth/register \
 cd /home/kiaq-lap-73/personal-finance-mobile
 
 grep -r "localhost\|API_URL\|baseURL\|8080\|9091" src/ app/ constants/ --include="*.ts" --include="*.tsx" --include="*.js" 2>/dev/null
+
+cd /home/kiaq-lap-73/personal-finance-mobile
+
+sed -i 's/const API_PORT = 8080/const API_PORT = 9091/' src/services/api.ts
+
+grep "API_PORT\|API_URL" src/services/api.ts
+# 9091 vasaradhu venum ✅
