@@ -1,0 +1,165 @@
+pipeline {
+    agent any
+
+    environment {
+        ANDROID_HOME = "/home/kiaq-lap-73/android-sdk"
+        JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
+        PATH = "${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/36.0.0:${JAVA_HOME}/bin:${env.PATH}"
+
+        APP_NAME = "Locate360-User-app"
+        PROJECT_DIR = "/home/kiaq-lap-73/Locate360-User-app"
+        OUTPUT_DIR = "/home/kiaq-lap-73/locate360-builds"
+
+        AWS_REGION = "us-east-1"
+        S3_BUCKET = "locate360-apk-storage"
+    }
+
+    stages {
+
+        stage('1. Checkout') {
+            steps {
+                echo '📥 Cloning Locate360-User-app repo...'
+                withCredentials([string(
+                    credentialsId: 'github-cred',
+                    variable: 'GIT_TOKEN'
+                )]) {
+                    sh '''
+                        git clone -b Native-dev https://$GIT_TOKEN@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
+                        cd ${PROJECT_DIR}
+                        git checkout Sivakumar
+                    '''
+                }
+            }
+        }
+
+        stage('2. Setup Environment') {
+            steps {
+                echo '⚙️ Verifying Java and Android SDK...'
+                sh '''
+                    java -version
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    echo "ANDROID_HOME=$ANDROID_HOME"
+                    sdkmanager --licenses < /dev/null || true
+                    aws --version || true
+                '''
+            }
+        }
+
+        stage('3. Install Dependencies') {
+            steps {
+                echo '📦 Installing Node dependencies...'
+                sh '''
+                    cd ${PROJECT_DIR}
+                    npm install --legacy-peer-deps
+                '''
+            }
+        }
+
+        stage('4. Expo Prebuild') {
+            steps {
+                echo '🔧 Running Expo Prebuild...'
+                sh '''
+                    cd ${PROJECT_DIR}
+                    npx expo prebuild --clean
+                '''
+            }
+        }
+
+        stage('5. Setup Debug Keystore') {
+            steps {
+                echo '🔑 Generating debug keystore if missing...'
+                sh '''
+                    if [ ! -f ${PROJECT_DIR}/android/app/debug.keystore ]; then
+                        keytool -genkey -v \
+                            -keystore ${PROJECT_DIR}/android/app/debug.keystore \
+                            -storepass android \
+                            -alias androiddebugkey \
+                            -keypass android \
+                            -keyalg RSA \
+                            -keysize 2048 \
+                            -validity 10000 \
+                            -dname "CN=Android Debug,O=Android,C=US"
+                        echo "✅ debug.keystore created"
+                    else
+                        echo "✅ debug.keystore already exists"
+                    fi
+                '''
+            }
+        }
+
+        stage('6. Clean Build') {
+            steps {
+                echo '🧹 Cleaning build...'
+                sh '''
+                    cd ${PROJECT_DIR}/android
+                    chmod +x gradlew
+                    ./gradlew clean
+                '''
+            }
+        }
+
+        stage('7. Build APK') {
+            steps {
+                echo '🏗️ Building Release APK...'
+                sh '''
+                    cd ${PROJECT_DIR}/android
+                    ./gradlew assembleRelease
+                '''
+            }
+        }
+
+        stage('8. Copy Output Files') {
+            steps {
+                echo '📁 Copying outputs...'
+                sh '''
+                    mkdir -p ${OUTPUT_DIR}
+                    cp ${PROJECT_DIR}/android/app/build/outputs/apk/release/app-release.apk \
+                       ${OUTPUT_DIR}/Locate360-User-app.apk
+                    ls -lh ${OUTPUT_DIR}
+                '''
+            }
+        }
+
+        stage('9. Upload to S3') {
+            steps {
+                echo '☁️ Uploading APK to S3...'
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-cred'
+                ]]) {
+                    sh '''
+                        aws s3 cp \
+                        ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
+                        --region ${AWS_REGION}
+
+                        aws s3 cp \
+                        ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        s3://${S3_BUCKET}/latest/Locate360-latest.apk \
+                        --region ${AWS_REGION}
+
+                        echo "✅ Uploaded to S3 successfully"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo """
+🎉 BUILD SUCCESS!
+
+APK: ${OUTPUT_DIR}/Locate360-User-app.apk
+
+S3: s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
+"""
+        }
+        failure {
+            echo '❌ BUILD FAILED - Check Jenkins console logs.'
+        }
+        always {
+            echo '📋 Pipeline completed.'
+        }
+    }
+}
