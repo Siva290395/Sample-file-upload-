@@ -81,8 +81,23 @@ pipeline {
         stage('3. prebuild'){
             steps{
                 sh '''
-                    echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
-                    npx expo prebuild --platform android --clean
+                  export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+            export ANDROID_HOME=/usr/lib/android-sdk
+            
+            # node_modules clean install
+            rm -rf node_modules
+            npm install
+            
+            # local.properties set
+            echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+            
+            # Fresh prebuild
+            rm -rf android
+            npx expo prebuild --platform android --clean
+            
+            # local.properties again set (prebuild deletes it)
+            echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+            echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> android/gradle.properties
                 '''
             }
         }
