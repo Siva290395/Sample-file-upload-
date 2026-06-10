@@ -85,3 +85,135 @@ pipeline{
     }
   }
 }
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        ANDROID_HOME = "/home/kiaq-lap-73/android-sdk"
+        JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
+        PATH = "${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/36.0.0:${JAVA_HOME}/bin:${env.PATH}"
+
+        PROJECT_DIR = "/home/kiaq-lap-73/Locate360-User-app"
+        OUTPUT_DIR = "/home/kiaq-lap-73/locate360-builds"
+
+        AWS_REGION = "us-east-1"
+        S3_BUCKET = "locate360-apk-storage"
+    }
+
+    stages {
+
+        stage('1. Checkout') {
+            steps {
+                sh '''
+                    git clone -b Native-dev https://github.com/Locate360-Repo/Locate360-User-app.git .
+                    git checkout Sivakumar
+                '''
+            }
+        }
+
+        stage('2. Install Dependencies') {
+            steps {
+                sh '''
+                    cd ${PROJECT_DIR}
+                    npm install --legacy-peer-deps
+                '''
+            }
+        }
+
+        stage('3. Expo Prebuild') {
+            steps {
+                sh '''
+                    cd ${PROJECT_DIR}
+                    npx expo prebuild --clean
+                '''
+            }
+        }
+
+        stage('4. Setup Debug Keystore') {
+            steps {
+                sh '''
+                    if [ ! -f ${PROJECT_DIR}/android/app/debug.keystore ]; then
+                        keytool -genkey -v \
+                            -keystore ${PROJECT_DIR}/android/app/debug.keystore \
+                            -storepass android \
+                            -alias androiddebugkey \
+                            -keypass android \
+                            -keyalg RSA \
+                            -keysize 2048 \
+                            -validity 10000 \
+                            -dname "CN=Android Debug,O=Android,C=US"
+                        echo "✅ debug.keystore created"
+                    else
+                        echo "✅ debug.keystore already exists"
+                    fi
+                '''
+            }
+        }
+
+        stage('5. Clean Build') {
+            steps {
+                sh '''
+                    cd ${PROJECT_DIR}/android
+                    chmod +x gradlew
+                    ./gradlew clean
+                '''
+            }
+        }
+
+        stage('6. Build APK') {
+            steps {
+                sh '''
+                    cd ${PROJECT_DIR}/android
+                    ./gradlew assembleRelease
+                '''
+            }
+        }
+
+        stage('7. Copy Output') {
+            steps {
+                sh '''
+                    mkdir -p ${OUTPUT_DIR}
+                    cp ${PROJECT_DIR}/android/app/build/outputs/apk/release/app-release.apk \
+                       ${OUTPUT_DIR}/Locate360-User-app.apk
+                    ls -lh ${OUTPUT_DIR}
+                '''
+            }
+        }
+
+        stage('8. Upload to S3') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-cred'
+                ]]) {
+                    sh '''
+                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
+                        --region ${AWS_REGION}
+
+                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        s3://${S3_BUCKET}/latest/Locate360-latest.apk \
+                        --region ${AWS_REGION}
+
+                        echo "✅ S3 Upload Success"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '🎉 BUILD SUCCESS! APK S3-la upload ஆச்சு!'
+        }
+        failure {
+            echo '❌ BUILD FAILED - Console logs check பண்ணுங்க!'
+        }
+        always {
+            echo '📋 Pipeline completed.'
+        }
+    }
+}
