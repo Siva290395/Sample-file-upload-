@@ -24,11 +24,19 @@ pipeline {
                     usernameVariable: 'GIT_USER',
                     passwordVariable: 'GIT_PASS'
                 )]) {
-                    sh '''
-                        git clone -b Native-dev https://$GIT_USER:$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
-                        cd ${PROJECT_DIR}
-                        git checkout Sivakumar
-                    '''
+                    sh """
+                        git config --global --add safe.directory ${PROJECT_DIR} || true
+                        if [ -d "${PROJECT_DIR}" ]; then
+                            cd ${PROJECT_DIR}
+                            git fetch origin
+                            git checkout Sivakumar
+                            git pull origin Sivakumar
+                        else
+                            git clone -b Native-dev https://\$GIT_USER:\$GIT_PASS@github.com/Locate360-Repo/Locate360-User-app.git ${PROJECT_DIR}
+                            cd ${PROJECT_DIR}
+                            git checkout Sivakumar
+                        fi
+                    """
                 }
             }
         }
@@ -146,7 +154,13 @@ pipeline {
 
     post {
         success {
-            echo '🎉 BUILD SUCCESS! APK S3-la upload ஆச்சு!'
+            echo """
+🎉 BUILD SUCCESS!
+
+APK: ${OUTPUT_DIR}/Locate360-User-app.apk
+
+S3: s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
+"""
         }
         failure {
             echo '❌ BUILD FAILED - Check Jenkins console logs.'
