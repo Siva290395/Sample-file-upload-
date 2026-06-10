@@ -31,3 +31,5 @@ nano src/main/java/com/financetracker/config/SecurityConfig.java
 cd /home/kiaq-lap-73/personal-finance-app
 
 sed -i 's/.csrf(AbstractHttpConfigurer::disable)/.cors(cors -> cors.configurationSource(corsConfigurationSource()))\n\t\t\t.csrf(AbstractHttpConfigurer::disable)/' src/main/java/com/financetracker/config/SecurityConfig.java
+
+grep -A2 "cors\|csrf" src/main/java/com/financetracker/config/SecurityConfig.java
