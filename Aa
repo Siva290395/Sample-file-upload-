@@ -5,7 +5,7 @@ pipeline {
         PROJECT_DIR  = "${WORKSPACE}"
         OUTPUT_DIR   = "${WORKSPACE}/outputs"
         S3_BUCKET    = "your-s3-bucket-name"
-        AWS_REGION   = "ap-south-1"
+        AWS_REGION   = "us-east-1"
         ANDROID_HOME = "/opt/android-sdk"
         JAVA_HOME    = "/usr/lib/jvm/java-17-openjdk-amd64"
         PATH         = "${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${JAVA_HOME}/bin:${PATH}"
