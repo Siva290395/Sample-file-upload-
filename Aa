@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_DIR  = "${WORKSPACE}"
         OUTPUT_DIR   = "${WORKSPACE}/outputs"
         S3_BUCKET    = "locate360"
         AWS_REGION   = "ap-south-1"
@@ -23,14 +22,14 @@ pipeline {
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
-                        rm -rf ${WORKSPACE}/* ${WORKSPACE}/.git || true
-                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
-                        echo "✅ Branch: $(git branch --show-current)"
-                        echo "✅ Latest commit: $(git log --oneline -1)"
+                        rm -rf "$WORKSPACE"/* "$WORKSPACE"/.git || true
+                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git "$WORKSPACE"
+                        echo "✅ Branch: $(git -C "$WORKSPACE" branch --show-current)"
+                        echo "✅ Latest commit: $(git -C "$WORKSPACE" log --oneline -1)"
                         echo "--- Root files ---"
-                        ls -la
+                        ls -la "$WORKSPACE"
                         echo "--- Android folder ---"
-                        ls -la android/
+                        ls -la "$WORKSPACE"/android/
                     '''
                 }
             }
@@ -55,7 +54,7 @@ pipeline {
             steps {
                 echo '📦 Installing Node dependencies...'
                 sh '''
-                    cd ${PROJECT_DIR}
+                    cd "$WORKSPACE"
                     npm install --legacy-peer-deps
                     echo "✅ npm install done"
                 '''
@@ -66,11 +65,10 @@ pipeline {
             steps {
                 echo '🔑 Generating debug keystore if missing...'
                 sh '''
-                    cd ${PROJECT_DIR}
-                    mkdir -p android/app
-                    if [ ! -f android/app/debug.keystore ]; then
+                    mkdir -p "$WORKSPACE"/android/app
+                    if [ ! -f "$WORKSPACE"/android/app/debug.keystore ]; then
                         keytool -genkey -v \
-                            -keystore android/app/debug.keystore \
+                            -keystore "$WORKSPACE"/android/app/debug.keystore \
                             -storepass android \
                             -alias androiddebugkey \
                             -keypass android \
@@ -90,14 +88,13 @@ pipeline {
             steps {
                 echo '📂 Verifying android folder and gradlew...'
                 sh '''
-                    cd ${PROJECT_DIR}
                     echo "--- Android folder contents ---"
-                    ls -la android/
-                    if [ ! -f android/gradlew ]; then
+                    ls -la "$WORKSPACE"/android/
+                    if [ ! -f "$WORKSPACE"/android/gradlew ]; then
                         echo "❌ gradlew not found!"
                         exit 1
                     fi
-                    chmod +x android/gradlew
+                    chmod +x "$WORKSPACE"/android/gradlew
                     echo "✅ gradlew ready"
                 '''
             }
@@ -107,7 +104,7 @@ pipeline {
             steps {
                 echo '🧹 Cleaning build...'
                 sh '''
-                    cd ${PROJECT_DIR}/android
+                    cd "$WORKSPACE"/android
                     chmod +x gradlew
                     ./gradlew clean
                     echo "✅ Clean done"
@@ -119,7 +116,7 @@ pipeline {
             steps {
                 echo '🏗️ Building Release APK...'
                 sh '''
-                    cd ${PROJECT_DIR}/android
+                    cd "$WORKSPACE"/android
                     chmod +x gradlew
                     ./gradlew assembleRelease
                     echo "✅ APK build done"
@@ -139,11 +136,11 @@ pipeline {
             steps {
                 echo '📁 Copying outputs...'
                 sh '''
-                    mkdir -p ${OUTPUT_DIR}
-                    cp ${PROJECT_DIR}/android/app/build/outputs/apk/release/app-release.apk \
-                       ${OUTPUT_DIR}/Locate360-User-app.apk
+                    mkdir -p "$WORKSPACE"/outputs
+                    cp "$WORKSPACE"/android/app/build/outputs/apk/release/app-release.apk \
+                       "$WORKSPACE"/outputs/Locate360-User-app.apk
                     echo "✅ APK copied"
-                    ls -lh ${OUTPUT_DIR}
+                    ls -lh "$WORKSPACE"/outputs/
                 '''
             }
         }
@@ -156,10 +153,10 @@ pipeline {
                     credentialsId: 'aws-credentials'
                 ]]) {
                     sh '''
-                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        aws s3 cp "$WORKSPACE"/outputs/Locate360-User-app.apk \
                             s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
                             --region ${AWS_REGION}
-                        aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
+                        aws s3 cp "$WORKSPACE"/outputs/Locate360-User-app.apk \
                             s3://${S3_BUCKET}/latest/Locate360-latest.apk \
                             --region ${AWS_REGION}
                         echo "✅ Uploaded to S3 successfully"
@@ -174,7 +171,7 @@ pipeline {
         success {
             echo """
 🎉 BUILD SUCCESS!
-APK : ${OUTPUT_DIR}/Locate360-User-app.apk
+APK : ${WORKSPACE}/outputs/Locate360-User-app.apk
 S3  : s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk
 """
         }
