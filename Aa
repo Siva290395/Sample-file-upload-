@@ -26,7 +26,7 @@ pipeline {
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
-                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/YOUR_ORG/YOUR_REPO.git .
+                        git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
                         git checkout Sivakumar
                         echo "✅ Branch: $(git branch --show-current)"
                         echo "✅ Latest commit: $(git log --oneline -1)"
@@ -65,6 +65,7 @@ pipeline {
 
         // ─────────────────────────────────────────
         // Stage 3: Install Node Dependencies
+        // (npm install + patch-package auto runs via postinstall)
         // ─────────────────────────────────────────
         stage('3. Install Dependencies') {
             steps {
@@ -72,26 +73,15 @@ pipeline {
                 sh '''
                     cd ${PROJECT_DIR}
 
-                    # package.json இருக்கா check பண்ணு
-                    if [ ! -f package.json ]; then
-                        echo "❌ package.json not found!"
-                        ls -la
-                        exit 1
-                    fi
-
-                    # npm install
+                    # npm install - patch-package postinstall auto run ஆகும்
                     npm install --legacy-peer-deps
 
                     echo "✅ npm install done"
 
-                    # Expo project-ஆ இருந்தா
-                    if grep -q '"expo"' package.json; then
-                        echo "📱 Expo project detected - running npx expo install"
-                        npx expo install
-                        echo "✅ npx expo install done"
-                    else
-                        echo "📱 Pure React Native project detected"
-                    fi
+                    # Expo dependencies sync
+                    npx expo install --fix
+
+                    echo "✅ npx expo install done"
                 '''
             }
         }
@@ -125,36 +115,31 @@ pipeline {
         }
 
         // ─────────────────────────────────────────
-        // Stage 5: Generate Android Files (Expo only)
+        // Stage 5: Verify Android Folder & gradlew
+        // (android folder already in repo - no prebuild needed)
         // ─────────────────────────────────────────
-        stage('5. Generate Android Folder') {
+        stage('5. Verify Android Setup') {
             steps {
-                echo '📂 Generating android folder if missing (Expo)...'
+                echo '📂 Verifying android folder and gradlew...'
                 sh '''
                     cd ${PROJECT_DIR}
 
-                    if grep -q '"expo"' package.json; then
-                        # Expo project - android folder generate பண்ணு
-                        if [ ! -d android ]; then
-                            echo "android folder இல்ல - npx expo prebuild run பண்றோம்"
-                            npx expo prebuild --platform android --clean
-                            echo "✅ android folder generated"
-                        else
-                            echo "✅ android folder already exists"
-                        fi
-                    else
-                        echo "✅ React Native project - android folder already present"
-                    fi
+                    echo "--- Project files ---"
+                    ls -la
 
-                    # gradlew இருக்கா verify பண்ணு
+                    echo "--- Android folder ---"
+                    ls -la android/
+
+                    # gradlew இருக்கா check பண்ணு
                     if [ ! -f android/gradlew ]; then
-                        echo "❌ gradlew not found in android folder!"
-                        ls -la android/
-                        exit 1
+                        echo "❌ gradlew not found! Running expo prebuild..."
+                        npx expo prebuild --platform android --clean
+                    else
+                        echo "✅ gradlew found"
                     fi
 
-                    echo "✅ gradlew found"
                     chmod +x android/gradlew
+                    echo "✅ gradlew permissions set"
                 '''
             }
         }
@@ -175,7 +160,7 @@ pipeline {
         }
 
         // ─────────────────────────────────────────
-        // Stage 7: Build APK
+        // Stage 7: Build Release APK
         // ─────────────────────────────────────────
         stage('7. Build APK') {
             steps {
@@ -183,18 +168,17 @@ pipeline {
                 sh '''
                     cd ${PROJECT_DIR}/android
                     chmod +x gradlew
-
-                    # Release APK build
                     ./gradlew assembleRelease
 
                     echo "✅ APK build done"
 
-                    # APK இருக்கா verify பண்ணு
+                    # APK verify
                     if [ -f app/build/outputs/apk/release/app-release.apk ]; then
                         echo "✅ APK found:"
                         ls -lh app/build/outputs/apk/release/
                     else
-                        echo "❌ APK not found!"
+                        echo "❌ APK not found! Checking build folder..."
+                        find . -name "*.apk" 2>/dev/null
                         exit 1
                     fi
                 '''
@@ -228,12 +212,12 @@ pipeline {
                     credentialsId: 'aws-credentials'
                 ]]) {
                     sh '''
-                        # Build number version upload
+                        # Build number version
                         aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
                             s3://${S3_BUCKET}/releases/Locate360-${BUILD_NUMBER}.apk \
                             --region ${AWS_REGION}
 
-                        # Latest version upload
+                        # Latest version
                         aws s3 cp ${OUTPUT_DIR}/Locate360-User-app.apk \
                             s3://${S3_BUCKET}/latest/Locate360-latest.apk \
                             --region ${AWS_REGION}
