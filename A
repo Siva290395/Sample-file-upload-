@@ -91,7 +91,6 @@ pipeline {
                     echo "✅ SDK found at: $SDK_PATH"
                     echo "sdk.dir=$SDK_PATH" > "$WORKSPACE"/android/local.properties
                     echo "✅ local.properties created"
-                    cat "$WORKSPACE"/android/local.properties
 
                     if [ ! -f "$WORKSPACE"/android/gradlew ]; then
                         echo "❌ gradlew not found!"
@@ -110,17 +109,8 @@ pipeline {
                     cd "$WORKSPACE"/android
                     chmod +x gradlew
 
-                    # NODE_PATH set பண்ணு
                     export NODE_BINARY=$(which node)
                     export PATH="$WORKSPACE/node_modules/.bin:$PATH"
-
-                    # .env file இருந்தா load பண்ணு
-                    if [ -f "$WORKSPACE/.env" ]; then
-                        set -a
-                        . "$WORKSPACE/.env"
-                        set +a
-                        echo "✅ .env loaded"
-                    fi
 
                     ./gradlew assembleRelease \
                         -PnodeExecutable=$(which node) \
