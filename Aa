@@ -23,10 +23,14 @@ pipeline {
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
+                        rm -rf ${WORKSPACE}/* ${WORKSPACE}/.git || true
                         git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
                         echo "✅ Branch: $(git branch --show-current)"
                         echo "✅ Latest commit: $(git log --oneline -1)"
+                        echo "--- Root files ---"
                         ls -la
+                        echo "--- Android folder ---"
+                        ls -la android/
                     '''
                 }
             }
@@ -87,7 +91,12 @@ pipeline {
                 echo '📂 Verifying android folder and gradlew...'
                 sh '''
                     cd ${PROJECT_DIR}
+                    echo "--- Android folder contents ---"
                     ls -la android/
+                    if [ ! -f android/gradlew ]; then
+                        echo "❌ gradlew not found!"
+                        exit 1
+                    fi
                     chmod +x android/gradlew
                     echo "✅ gradlew ready"
                 '''
