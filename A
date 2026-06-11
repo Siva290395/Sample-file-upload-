@@ -3,29 +3,26 @@ pipeline {
 
     environment {
         OUTPUT_DIR   = "${WORKSPACE}/outputs"
-        S3_BUCKET    = "locate360"
-        AWS_REGION   = "ap-south-1"
+        S3_BUCKET    = "locate360-apk-storage"
+        AWS_REGION   = "us-east-1"
         JAVA_HOME    = "/usr/lib/jvm/java-17-openjdk-amd64"
     }
 
     stages {
 
-        stage('1. Pre-Clean, Clone & Checkout') {
+        stage('1. Pre-Clean & Clone') {
             steps {
                 echo '🧹 Cleaning workspace and cloning repo...'
                 cleanWs()
                 withCredentials([usernamePassword(
-                    credentialsId: 'github-credentials',
+                    credentialsId: 'github-cred',
                     usernameVariable: 'GIT_USER',
                     passwordVariable: 'GIT_PASS'
                 )]) {
                     sh '''
-                        rm -rf "$WORKSPACE"/* "$WORKSPACE"/.git || true
                         git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git "$WORKSPACE"
                         echo "✅ Branch: $(git -C "$WORKSPACE" branch --show-current)"
                         echo "✅ Latest commit: $(git -C "$WORKSPACE" log --oneline -1)"
-                        ls -la "$WORKSPACE"
-                        ls -la "$WORKSPACE"/android/
                     '''
                 }
             }
@@ -112,16 +109,13 @@ pipeline {
                     export NODE_BINARY=$(which node)
                     export PATH="$WORKSPACE/node_modules/.bin:$PATH"
 
-                    ./gradlew assembleRelease \
-                        -PnodeExecutable=$(which node) \
-                        --no-daemon
+                    ./gradlew clean assembleRelease --no-daemon
 
                     if [ -f app/build/outputs/apk/release/app-release.apk ]; then
                         echo "✅ APK found:"
                         ls -lh app/build/outputs/apk/release/
                     else
                         echo "❌ APK not found!"
-                        find . -name "*.apk" 2>/dev/null
                         exit 1
                     fi
                 '''
@@ -146,7 +140,7 @@ pipeline {
                 echo '☁️ Uploading APK to S3...'
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
+                    credentialsId: 'aws-cred'
                 ]]) {
                     sh '''
                         aws s3 cp "$WORKSPACE"/outputs/Locate360-User-app.apk \
@@ -160,7 +154,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
