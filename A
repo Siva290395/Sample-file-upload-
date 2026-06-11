@@ -107,7 +107,7 @@ pipeline {
                 sh '''
                     cd "$WORKSPACE"/android
                     chmod +x gradlew
-
+                    export GRADLE_OPTS="-Xmx2g -XX:MaxMetaspaceSize=512m"
                     export NODE_BINARY=$(which node)
                     export PATH="$WORKSPACE/node_modules/.bin:$PATH"
 
