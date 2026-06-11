@@ -26,9 +26,7 @@ pipeline {
                         git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git "$WORKSPACE"
                         echo "✅ Branch: $(git -C "$WORKSPACE" branch --show-current)"
                         echo "✅ Latest commit: $(git -C "$WORKSPACE" log --oneline -1)"
-                        echo "--- Root files ---"
                         ls -la "$WORKSPACE"
-                        echo "--- Android folder ---"
                         ls -la "$WORKSPACE"/android/
                     '''
                 }
@@ -88,8 +86,12 @@ pipeline {
             steps {
                 echo '📂 Verifying android folder and gradlew...'
                 sh '''
-                    echo "--- Android folder contents ---"
                     ls -la "$WORKSPACE"/android/
+
+                    # local.properties - ANDROID_HOME set பண்ணு
+                    echo "sdk.dir=/opt/android-sdk" > "$WORKSPACE"/android/local.properties
+                    echo "✅ local.properties created"
+
                     if [ ! -f "$WORKSPACE"/android/gradlew ]; then
                         echo "❌ gradlew not found!"
                         exit 1
@@ -100,19 +102,7 @@ pipeline {
             }
         }
 
-        stage('6. Clean Build') {
-            steps {
-                echo '🧹 Cleaning build...'
-                sh '''
-                    cd "$WORKSPACE"/android
-                    chmod +x gradlew
-                    ./gradlew clean
-                    echo "✅ Clean done"
-                '''
-            }
-        }
-
-        stage('7. Build APK') {
+        stage('6. Build APK') {
             steps {
                 echo '🏗️ Building Release APK...'
                 sh '''
@@ -132,7 +122,7 @@ pipeline {
             }
         }
 
-        stage('8. Copy Output Files') {
+        stage('7. Copy Output Files') {
             steps {
                 echo '📁 Copying outputs...'
                 sh '''
@@ -145,7 +135,7 @@ pipeline {
             }
         }
 
-        stage('9. Upload to S3') {
+        stage('8. Upload to S3') {
             steps {
                 echo '☁️ Uploading APK to S3...'
                 withCredentials([[
