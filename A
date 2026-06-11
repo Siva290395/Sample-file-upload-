@@ -81,7 +81,6 @@ pipeline {
             steps {
                 echo '📂 Verifying android folder and gradlew...'
                 sh '''
-                    # Android SDK path auto find
                     SDK_PATH=$(find /usr /opt /home -name "adb" 2>/dev/null | head -1 | sed 's|/platform-tools/adb||')
 
                     if [ -z "$SDK_PATH" ]; then
@@ -110,8 +109,23 @@ pipeline {
                 sh '''
                     cd "$WORKSPACE"/android
                     chmod +x gradlew
-                    ./gradlew assembleRelease
-                    echo "✅ APK build done"
+
+                    # NODE_PATH set பண்ணு
+                    export NODE_BINARY=$(which node)
+                    export PATH="$WORKSPACE/node_modules/.bin:$PATH"
+
+                    # .env file இருந்தா load பண்ணு
+                    if [ -f "$WORKSPACE/.env" ]; then
+                        set -a
+                        . "$WORKSPACE/.env"
+                        set +a
+                        echo "✅ .env loaded"
+                    fi
+
+                    ./gradlew assembleRelease \
+                        -PnodeExecutable=$(which node) \
+                        --no-daemon
+
                     if [ -f app/build/outputs/apk/release/app-release.apk ]; then
                         echo "✅ APK found:"
                         ls -lh app/build/outputs/apk/release/
