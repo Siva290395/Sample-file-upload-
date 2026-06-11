@@ -24,9 +24,9 @@ pipeline {
                 )]) {
                     sh '''
                         git clone -b Native-dev https://${GIT_USER}:${GIT_PASS}@github.com/Locate360-Repo/Locate360-User-app.git .
-                        git checkout Sivakumar
                         echo "✅ Branch: $(git branch --show-current)"
                         echo "✅ Latest commit: $(git log --oneline -1)"
+                        ls -la
                     '''
                 }
             }
@@ -87,14 +87,7 @@ pipeline {
                 echo '📂 Verifying android folder and gradlew...'
                 sh '''
                     cd ${PROJECT_DIR}
-                    ls -la
-                    if [ ! -f android/gradlew ]; then
-                        echo "gradlew இல்லை - expo prebuild run பண்றோம்"
-                        npx expo prebuild --platform android --clean --no-install
-                        echo "✅ expo prebuild done"
-                    else
-                        echo "✅ gradlew found"
-                    fi
+                    ls -la android/
                     chmod +x android/gradlew
                     echo "✅ gradlew ready"
                 '''
