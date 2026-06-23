@@ -1,0 +1,104 @@
+# ============================================================
+# ec2.tf - EC2 Instance with Key Pair & Security Group
+# ============================================================
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+# ============================================================
+# 1. Generate RSA Private Key Locally
+# ============================================================
+resource "tls_private_key" "my_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# ============================================================
+# 2. Create AWS Key Pair
+# ============================================================
+resource "aws_key_pair" "deployer" {
+  key_name   = "datacenter-kp"
+  public_key = tls_private_key.my_key.public_key_openssh
+}
+
+# Save private key locally
+resource "local_file" "private_key" {
+  content         = tls_private_key.my_key.private_key_pem
+  filename        = "${path.module}/datacenter-kp.pem"
+  file_permission = "0400"
+}
+
+# ============================================================
+# 3. Create Security Group
+# ============================================================
+resource "aws_security_group" "web_sg" {
+  name        = "datacenter-sg"
+  description = "Security group for EC2"
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "datacenter-sg"
+  }
+}
+
+# ============================================================
+# 4. Launch Ubuntu EC2 Instance
+# ============================================================
+resource "aws_instance" "web" {
+  ami                    = "ami-0e86e20dae9224db8"   # Ubuntu 24.04 LTS (us-east-1)
+  instance_type          = "t2.micro"
+
+  key_name               = aws_key_pair.deployer.key_name
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  tags = {
+    Name = "datacenter-ec2"
+  }
+}
+
+# ============================================================
+# 5. Outputs
+# ============================================================
+output "instance_public_ip" {
+  value = aws_instance.web.public_ip
+}
+
+output "ssh_command" {
+  value = "ssh -i datacenter-kp.pem ubuntu@${aws_instance.web.public_ip}"
+}
