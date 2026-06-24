@@ -213,3 +213,17 @@ sudo apt-get update
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
 sudo apt-get update
+
+
+- name: Add Jenkins key and repo
+      shell: |
+        sudo rm -f /etc/apt/sources.list.d/jenkins.list
+        sudo rm -f /usr/share/keyrings/jenkins-keyring*
+        wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
+        sudo apt-get update
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
