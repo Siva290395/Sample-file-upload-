@@ -122,7 +122,6 @@ resource "aws_instance" "harbor" {
 [harbor]
 <harbor-public-ip> ansible_user=ubuntu ansible_ssh_private_key_file=~/terraform/app-kp.pem
 
-
 ---
 - name: Install Jenkins
   hosts: jenkins
@@ -139,84 +138,6 @@ resource "aws_instance" "harbor" {
 
     - name: Add Jenkins key and repo
       shell: |
-        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
-        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
-        apt-get update
-
-    - name: Install Jenkins
-      apt:
-        name: jenkins
-        state: present
-
-    - name: Start Jenkins
-      service:
-        name: jenkins
-        state: started
-        enabled: yes
-
-- name: Install Harbor
-  hosts: harbor
-  become: yes
-  tasks:
-    - name: Update apt
-      apt:
-        update_cache: yes
-
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-
-    - name: Start Docker
-      service:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Install Docker Compose
-      shell: |
-        curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-
-    - name: Download Harbor
-      shell: |
-        wget https://github.com/goharbor/harbor/releases/download/v2.10.0/harbor-online-installer-v2.10.0.tgz -P /opt/
-        tar -xzf /opt/harbor-online-installer-v2.10.0.tgz -C /opt/
-
-    - name: Copy Harbor config
-      shell: cp /opt/harbor/harbor.yml.tmpl /opt/harbor/harbor.yml
-
-    - name: Set Harbor hostname
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: 'hostname: reg.mydomain.com'
-        replace: 'hostname: {{ ansible_host }}'
-
-    - name: Install Harbor
-      shell: /opt/harbor/install.sh
-      args:
-        chdir: /opt/harbor
-
-- name: Add Jenkins key and repo
-  shell: |
-    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | \
-    sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
-    echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | \
-    sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-    sudo apt-get update
-
-
-
-
-sudo rm /etc/apt/sources.list.d/jenkins.list
-sudo apt-get update
-wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
-sudo apt-get update
-
-
-- name: Add Jenkins key and repo
-      shell: |
         sudo rm -f /etc/apt/sources.list.d/jenkins.list
         sudo rm -f /usr/share/keyrings/jenkins-keyring*
         wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
@@ -227,9 +148,13 @@ sudo apt-get update
       apt:
         name: jenkins
         state: present
+        update_cache: yes
 
-
-
+    - name: Start and enable Jenkins
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
 
 - name: Install Harbor
   hosts: harbor
@@ -238,8 +163,19 @@ sudo apt-get update
     - name: Install Docker
       shell: |
         curl -fsSL https://get.docker.com | sh
-        systemctl start docker
-        systemctl enable docker
+
+
+    - name: Start Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Wait for Docker to be ready
+      wait_for:
+        path: /var/run/docker.sock
+        timeout: 30
+
 
     - name: Install Docker Compose
       shell: |
@@ -289,76 +225,3 @@ sudo apt-get update
       args:
         chdir: /opt/harbor
 
-
-
-
-
-
-
-
-- name: Install Harbor
-  hosts: harbor
-  become: yes
-  tasks:
-    - name: Install Docker
-      shell: |
-        curl -fsSL https://get.docker.com | sh
-
-    - name: Start Docker
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Wait for Docker to be ready
-      wait_for:
-        path: /var/run/docker.sock
-        timeout: 30
-
-    - name: Install Docker Compose
-      shell: |
-        curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-
-    - name: Download Harbor
-      shell: |
-        wget https://github.com/goharbor/harbor/releases/download/v2.10.0/harbor-online-installer-v2.10.0.tgz -P /opt/
-        tar -xzf /opt/harbor-online-installer-v2.10.0.tgz -C /opt/
-
-    - name: Copy Harbor config
-      shell: cp /opt/harbor/harbor.yml.tmpl /opt/harbor/harbor.yml
-
-    - name: Set Harbor hostname
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: 'hostname: reg.mydomain.com'
-        replace: 'hostname: {{ ansible_host }}'
-
-    - name: Disable HTTPS in Harbor config
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: '^https:'
-        replace: '#https:'
-
-    - name: Comment out https port
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: '^  port: 443'
-        replace: '#  port: 443'
-
-    - name: Comment out certificate
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: '^  certificate:.*'
-        replace: '#  certificate:'
-
-    - name: Comment out private key
-      replace:
-        path: /opt/harbor/harbor.yml
-        regexp: '^  private_key:.*'
-        replace: '#  private_key:'
-
-    - name: Install Harbor
-      shell: /opt/harbor/install.sh
-      args:
-        chdir: /opt/harbor
