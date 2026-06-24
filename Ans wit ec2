@@ -123,5 +123,77 @@ resource "aws_instance" "harbor" {
 <harbor-public-ip> ansible_user=ubuntu ansible_ssh_private_key_file=~/terraform/app-kp.pem
 
 
+---
+- name: Install Jenkins
+  hosts: jenkins
+  become: yes
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
 
+    - name: Install Java 21
+      apt:
+        name: openjdk-21-jdk
+        state: present
+
+    - name: Add Jenkins key and repo
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
+        apt-get update
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+- name: Install Harbor
+  hosts: harbor
+  become: yes
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Docker Compose
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+
+    - name: Download Harbor
+      shell: |
+        wget https://github.com/goharbor/harbor/releases/download/v2.10.0/harbor-online-installer-v2.10.0.tgz -P /opt/
+        tar -xzf /opt/harbor-online-installer-v2.10.0.tgz -C /opt/
+
+    - name: Copy Harbor config
+      shell: cp /opt/harbor/harbor.yml.tmpl /opt/harbor/harbor.yml
+
+    - name: Set Harbor hostname
+      replace:
+        path: /opt/harbor/harbor.yml
+        regexp: 'hostname: reg.mydomain.com'
+        replace: 'hostname: {{ ansible_host }}'
+
+    - name: Install Harbor
+      shell: /opt/harbor/install.sh
+      args:
+        chdir: /opt/harbor
 
