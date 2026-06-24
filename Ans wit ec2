@@ -171,7 +171,6 @@ resource "aws_instance" "harbor" {
 
 
 
-
 - name: Install Jenkins
   hosts: jenkins
   become: yes
@@ -180,18 +179,17 @@ resource "aws_instance" "harbor" {
       apt:
         update_cache: yes
 
-    - name: Install Java
+    - name: Install Java 21
       apt:
         name: openjdk-21-jdk
         state: present
 
-    - name: Add Jenkins repo key
+    - name: Add Jenkins repo key and repo
       shell: |
-        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
-
-    - name: Add Jenkins repo
-      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor | tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null
         echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+      args:
+        creates: /usr/share/keyrings/jenkins-keyring.gpg
 
     - name: Install Jenkins
       apt:
